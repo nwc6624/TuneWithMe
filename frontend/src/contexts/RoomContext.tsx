@@ -71,7 +71,7 @@ export function RoomProvider({ children }: RoomProviderProps) {
 
   const connectWebSocket = (roomId: string) => {
     try {
-      const ws = new WebSocket(`ws://localhost:3001/ws/rooms/${roomId}`)
+      const ws = new WebSocket(`ws://127.0.0.1:3001/ws/rooms/${roomId}`)
       
       ws.onopen = () => {
         setIsConnected(true)
@@ -154,6 +154,16 @@ export function RoomProvider({ children }: RoomProviderProps) {
       if (response.ok) {
         const data = await response.json()
         const roomId = data.room_id
+        
+        // Create a room object and set it as current
+        const newRoom: Room = {
+          id: roomId,
+          host_user_id: '', // This will be set by the backend
+          created_at: new Date().toISOString(),
+          is_active: false,
+          member_count: 1
+        }
+        setCurrentRoom(newRoom)
         
         // Connect to WebSocket
         connectWebSocket(roomId)

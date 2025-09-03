@@ -39,7 +39,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch('/api/auth/me', {
+      const response = await fetch('/auth/me', {
         credentials: 'include'
       })
 
@@ -59,12 +59,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = (role: 'host' | 'viewer') => {
     // Redirect to Spotify OAuth
-    window.location.href = `/api/auth/spotify/start?role=${role}`
+          window.location.href = `/auth/spotify/start?role=${role}`
   }
 
   const logout = async () => {
     try {
-      await fetch('/api/auth/logout', {
+      await fetch('/auth/logout', {
         method: 'POST',
         credentials: 'include'
       })
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshTokens = async () => {
     try {
-      const response = await fetch('/api/auth/refresh', {
+      const response = await fetch('/auth/refresh', {
         method: 'POST',
         credentials: 'include'
       })

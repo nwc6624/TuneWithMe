@@ -1,335 +1,280 @@
-import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { z } from 'zod';
-import { v4 as uuidv4 } from 'uuid';
-import { redis } from '../services/redis.js';
-import { spotifyService } from '../services/spotify.js';
-import { logger } from '../utils/logger.js';
-import { Room, Member, CreateRoomRequest, JoinRoomRequest } from '../types/index.js';
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
+import { z } from 'zod'
+import { redis } from '../services/redis.js'
+import { getSpotifyService } from '../services/spotify.js'
+import { logger } from '../utils/logger.js'
 
+// Schema for creating a room
 const createRoomSchema = z.object({
-  name: z.string().optional(),
-  settings: z.object({
-    resync_ms: z.number().default(1000),
-    force_sync: z.boolean().default(false),
-    soft_threshold_ms: z.number().default(150)
-  }).optional()
-});
+  name: z.string().optional()
+})
 
+// Schema for joining a room
 const joinRoomSchema = z.object({
   room_id: z.string(),
   device_id: z.string().optional()
-});
+})
 
-const startSharingSchema = z.object({
+// Schema for room state
+const roomStateSchema = z.object({
   room_id: z.string()
-});
+})
 
-const stopSharingSchema = z.object({
-  room_id: z.string()
-});
-
-export async function roomRoutes(fastify: FastifyInstance) {
+export default async function roomRoutes(fastify: FastifyInstance) {
   // Create a new room
-  fastify.post('/', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/rooms', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const session = request.session as any;
-      
-      if (!session.authenticated || session.role !== 'host') {
-        return reply.status(403).send({ error: 'Only hosts can create rooms' });
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
       }
+
+      const { name } = createRoomSchema.parse(request.body)
+      const roomId = `room_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      const body = createRoomSchema.parse(request.body);
-      const roomId = uuidv4();
-      
-      // Get user tokens
-      const tokens = await redis.getTokens(session.user_id);
-      if (!tokens) {
-        return reply.status(401).send({ error: 'Tokens not found' });
-      }
-      
-      const room: Room = {
+      const room = {
         id: roomId,
         host_user_id: session.user_id,
-        created_at: new Date(),
-        settings: {
-          resync_ms: body.settings?.resync_ms || 1000,
-          force_sync: body.settings?.force_sync || false,
-          soft_threshold_ms: body.settings?.soft_threshold_ms || 150
-        },
-        active_track: null,
-        last_state: null,
-        host_tokens: tokens,
-        is_active: false
-      };
-      
+        host_name: session.display_name || 'Unknown',
+        name: name || 'My Room',
+        created_at: new Date().toISOString(),
+        is_active: false,
+        member_count: 1,
+        members: [session.user_id]
+      }
+
       // Store room in Redis
-      await redis.createRoom(roomId, {
-        ...room,
-        created_at: room.created_at.toISOString(),
-        host_tokens: JSON.stringify(room.host_tokens)
-      });
+      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room)) // 1 hour TTL
       
-      // Add host as first member
-      const hostMember: Member = {
-        id: uuidv4(),
+      // Store user's current room
+      await redis.client.setEx(`user_room:${session.user_id}`, 3600, roomId)
+
+      logger.info(`Room created: ${roomId} by user: ${session.user_id}`)
+      
+      return reply.send({ 
         room_id: roomId,
-        role: 'host',
-        user_id: session.user_id,
-        display_name: session.display_name,
-        joined_at: new Date()
-      };
-      
-      await redis.addMemberToRoom(roomId, hostMember.id, {
-        ...hostMember,
-        joined_at: hostMember.joined_at.toISOString()
-      });
-      
-      logger.info(`Room ${roomId} created by ${session.display_name}`);
-      
-      return reply.status(201).send({ room_id: roomId });
+        room: room
+      })
     } catch (error) {
-      logger.error('Failed to create room:', error);
-      return reply.status(500).send({ error: 'Failed to create room' });
+      logger.error('Failed to create room:', error)
+      return reply.status(500).send({ error: 'Failed to create room' })
     }
-  });
+  })
 
   // Join a room
-  fastify.post('/:id/join', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/rooms/:roomId/join', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const session = request.session as any;
-      
-      if (!session.authenticated || session.role !== 'viewer') {
-        return reply.status(403).send({ error: 'Only viewers can join rooms' });
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
       }
-      
-      const { id: roomId } = request.params as { id: string };
-      const body = joinRoomSchema.parse(request.body);
-      
-      // Check if room exists
-      const room = await redis.getRoom(roomId);
-      if (!room) {
-        return reply.status(404).send({ error: 'Room not found' });
-      }
-      
-      // Check if user is already a member
-      const existingMembers = await redis.getRoomMembers(roomId);
-      const isAlreadyMember = existingMembers.some(
-        (m: any) => m.user_id === session.user_id
-      );
-      
-      if (isAlreadyMember) {
-        return reply.status(400).send({ error: 'Already a member of this room' });
-      }
-      
-      // Get user tokens
-      const tokens = await redis.getTokens(session.user_id);
-      if (!tokens) {
-        return reply.status(401).send({ error: 'Tokens not found' });
-      }
-      
-      // Create member
-      const member: Member = {
-        id: uuidv4(),
-        room_id: roomId,
-        role: 'viewer',
-        user_id: session.user_id,
-        display_name: session.display_name,
-        viewer_tokens: tokens,
-        device_preference: body.device_id ? {
-          device_id: body.device_id,
-          type: 'unknown',
-          use_web_player: false
-        } : undefined,
-        joined_at: new Date()
-      };
-      
-      await redis.addMemberToRoom(roomId, member.id, {
-        ...member,
-        joined_at: member.joined_at.toISOString(),
-        viewer_tokens: JSON.stringify(member.viewer_tokens)
-      });
-      
-      logger.info(`User ${session.display_name} joined room ${roomId}`);
-      
-      return reply.send({ success: true, member_id: member.id });
-    } catch (error) {
-      logger.error('Failed to join room:', error);
-      return reply.status(500).send({ error: 'Failed to join room' });
-    }
-  });
 
-  // Leave a room
-  fastify.post('/:id/leave', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const session = request.session as any;
-      
-      if (!session.authenticated) {
-        return reply.status(401).send({ error: 'Not authenticated' });
-      }
-      
-      const { id: roomId } = request.params as { id: string };
-      
-      // Get room members to find the member ID
-      const members = await redis.getRoomMembers(roomId);
-      const member = members.find((m: any) => m.user_id === session.user_id);
-      
-      if (!member) {
-        return reply.status(404).send({ error: 'Not a member of this room' });
-      }
-      
-      // Remove member from room
-      await redis.removeMemberFromRoom(roomId, member.id);
-      
-      // If host is leaving, deactivate room
-      if (member.role === 'host') {
-        await redis.updateRoom(roomId, { is_active: false });
-        logger.info(`Room ${roomId} deactivated - host left`);
-      }
-      
-      logger.info(`User ${session.display_name} left room ${roomId}`);
-      
-      return reply.send({ success: true });
-    } catch (error) {
-      logger.error('Failed to leave room:', error);
-      return reply.status(500).send({ error: 'Failed to leave room' });
-    }
-  });
+      const { roomId } = request.params as { roomId: string }
+      const { device_id } = joinRoomSchema.parse(request.body)
 
-  // Start sharing (host only)
-  fastify.post('/:id/start', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const session = request.session as any;
-      
-      if (!session.authenticated || session.role !== 'host') {
-        return reply.status(403).send({ error: 'Only hosts can start sharing' });
+      // Get room from Redis
+      const roomData = await redis.client.get(`room:${roomId}`)
+      if (!roomData) {
+        return reply.status(404).send({ error: 'Room not found' })
       }
-      
-      const { id: roomId } = request.params as { id: string };
-      
-      // Check if room exists and user is the host
-      const room = await redis.getRoom(roomId);
-      if (!room) {
-        return reply.status(404).send({ error: 'Room not found' });
-      }
-      
-      if (room.host_user_id !== session.user_id) {
-        return reply.status(403).send({ error: 'Only the room host can start sharing' });
-      }
-      
-      // Activate room
-      await redis.updateRoom(roomId, { is_active: true });
-      
-      logger.info(`Room ${roomId} started sharing by ${session.display_name}`);
-      
-      return reply.send({ success: true });
-    } catch (error) {
-      logger.error('Failed to start sharing:', error);
-      return reply.status(500).send({ error: 'Failed to start sharing' });
-    }
-  });
 
-  // Stop sharing (host only)
-  fastify.post('/:id/stop', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const session = request.session as any;
+      const room = JSON.parse(roomData)
       
-      if (!session.authenticated || session.role !== 'host') {
-        return reply.status(403).send({ error: 'Only hosts can stop sharing' });
+      // Check if user is already in the room
+      if (room.members.includes(session.user_id)) {
+        return reply.status(400).send({ error: 'Already in room' })
       }
+
+      // Add user to room
+      room.members.push(session.user_id)
+      room.member_count = room.members.length
+
+      // Update room in Redis
+      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
       
-      const { id: roomId } = request.params as { id: string };
+      // Store user's current room
+      await redis.client.setEx(`user_room:${session.user_id}`, 3600, roomId)
+
+      logger.info(`User ${session.user_id} joined room: ${roomId}`)
       
-      // Check if room exists and user is the host
-      const room = await redis.getRoom(roomId);
-      if (!room) {
-        return reply.status(404).send({ error: 'Room not found' });
-      }
-      
-      if (room.host_user_id !== session.user_id) {
-        return reply.status(403).send({ error: 'Only the room host can stop sharing' });
-      }
-      
-      // Deactivate room
-      await redis.updateRoom(roomId, { is_active: false });
-      
-      logger.info(`Room ${roomId} stopped sharing by ${session.display_name}`);
-      
-      return reply.send({ success: true });
+      return reply.send({ 
+        success: true,
+        room: room
+      })
     } catch (error) {
-      logger.error('Failed to stop sharing:', error);
-      return reply.status(500).send({ error: 'Failed to stop sharing' });
+      logger.error('Failed to join room:', error)
+      return reply.status(500).send({ error: 'Failed to join room' })
     }
-  });
+  })
 
   // Get room state
-  fastify.get('/:id/state', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/rooms/:roomId/state', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { id: roomId } = request.params as { id: string };
-      
-      // Check if room exists
-      const room = await redis.getRoom(roomId);
-      if (!room) {
-        return reply.status(404).send({ error: 'Room not found' });
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
       }
-      
-      // Get current playback state
-      const playbackState = await redis.getPlaybackState(roomId);
-      
-      // Get member count
-      const memberCount = await redis.getRoomMemberCount(roomId);
-      
-      return reply.send({
-        room: {
-          id: room.id,
-          host_user_id: room.host_user_id,
-          created_at: room.created_at,
-          is_active: room.is_active,
-          member_count: memberCount
-        },
-        playback: playbackState
-      });
-    } catch (error) {
-      logger.error('Failed to get room state:', error);
-      return reply.status(500).send({ error: 'Failed to get room state' });
-    }
-  });
 
-  // Get room members
-  fastify.get('/:id/members', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id: roomId } = request.params as { id: string };
-      
-      // Check if room exists
-      const room = await redis.getRoom(roomId);
-      if (!room) {
-        return reply.status(404).send({ error: 'Room not found' });
-      }
-      
-      // Get members
-      const members = await redis.getRoomMembers(roomId);
-      
-      return reply.send({ members });
-    } catch (error) {
-      logger.error('Failed to get room members:', error);
-      return reply.status(500).send({ error: 'Failed to get room members' });
-    }
-  });
+      const { roomId } = request.params as { roomId: string }
 
-  // Get user's rooms
-  fastify.get('/my', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const session = request.session as any;
-      
-      if (!session.authenticated) {
-        return reply.status(401).send({ error: 'Not authenticated' });
+      // Get room from Redis
+      const roomData = await redis.client.get(`room:${roomId}`)
+      if (!roomData) {
+        return reply.status(404).send({ error: 'Room not found' })
       }
+
+      const room = JSON.parse(roomData)
       
-      // This would require a more complex query in Redis
-      // For now, return empty array - can be enhanced later
-      return reply.send({ rooms: [] });
+      // Check if user is in the room
+      if (!room.members.includes(session.user_id)) {
+        return reply.status(403).send({ error: 'Not a member of this room' })
+      }
+
+      // Get current playback state from host
+      let playback = null
+      if (room.host_user_id === session.user_id) {
+        // Host gets their own playback state
+        const tokens = await redis.getTokens(session.user_id)
+        if (tokens) {
+          getSpotifyService().setAccessToken(tokens.access_token)
+          playback = await getSpotifyService().getCurrentPlayback()
+        }
+      } else {
+        // Viewer gets host's playback state
+        const hostTokens = await redis.getTokens(room.host_user_id)
+        if (hostTokens) {
+          getSpotifyService().setAccessToken(hostTokens.access_token)
+          playback = await getSpotifyService().getCurrentPlayback()
+        }
+      }
+
+      return reply.send({ 
+        room: room,
+        playback: playback
+      })
     } catch (error) {
-      logger.error('Failed to get user rooms:', error);
-      return reply.status(500).send({ error: 'Failed to get user rooms' });
+      logger.error('Failed to get room state:', error)
+      return reply.status(500).send({ error: 'Failed to get room state' })
     }
-  });
+  })
+
+  // Start sharing (activate room)
+  fastify.post('/rooms/:roomId/start', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
+      }
+
+      const { roomId } = request.params as { roomId: string }
+
+      // Get room from Redis
+      const roomData = await redis.client.get(`room:${roomId}`)
+      if (!roomData) {
+        return reply.status(404).send({ error: 'Room not found' })
+      }
+
+      const room = JSON.parse(roomData)
+      
+      // Check if user is the host
+      if (room.host_user_id !== session.user_id) {
+        return reply.status(403).send({ error: 'Only the host can start sharing' })
+      }
+
+      // Activate room
+      room.is_active = true
+      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+
+      logger.info(`Room ${roomId} started sharing by user: ${session.user_id}`)
+      
+      return reply.send({ success: true })
+    } catch (error) {
+      logger.error('Failed to start sharing:', error)
+      return reply.status(500).send({ error: 'Failed to start sharing' })
+    }
+  })
+
+  // Stop sharing (deactivate room)
+  fastify.post('/rooms/:roomId/stop', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
+      }
+
+      const { roomId } = request.params as { roomId: string }
+
+      // Get room from Redis
+      const roomData = await redis.client.get(`room:${roomId}`)
+      if (!roomData) {
+        return reply.status(404).send({ error: 'Room not found' })
+      }
+
+      const room = JSON.parse(roomData)
+      
+      // Check if user is the host
+      if (room.host_user_id !== session.user_id) {
+        return reply.status(403).send({ error: 'Only the host can stop sharing' })
+      }
+
+      // Deactivate room
+      room.is_active = false
+      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+
+      logger.info(`Room ${roomId} stopped sharing by user: ${session.user_id}`)
+      
+      return reply.send({ success: true })
+    } catch (error) {
+      logger.error('Failed to stop sharing:', error)
+      return reply.status(500).send({ error: 'Failed to stop sharing' })
+    }
+  })
+
+  // Leave room
+  fastify.post('/rooms/:roomId/leave', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
+      }
+
+      const { roomId } = request.params as { roomId: string }
+
+      // Get room from Redis
+      const roomData = await redis.client.get(`room:${roomId}`)
+      if (!roomData) {
+        return reply.status(404).send({ error: 'Room not found' })
+      }
+
+      const room = JSON.parse(roomData)
+      
+      // Remove user from room
+      room.members = room.members.filter((id: string) => id !== session.user_id)
+      room.member_count = room.members.length
+
+      // If no members left, delete the room
+      if (room.members.length === 0) {
+        await redis.client.del(`room:${roomId}`)
+        logger.info(`Room ${roomId} deleted (no members left)`)
+      } else {
+        // If host left, assign new host
+        if (room.host_user_id === session.user_id) {
+          room.host_user_id = room.members[0]
+          room.host_name = 'Unknown' // Will be updated when new host logs in
+        }
+        
+        // Update room in Redis
+        await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+        logger.info(`User ${session.user_id} left room: ${roomId}`)
+      }
+
+      // Remove user's room association
+      await redis.client.del(`user_room:${session.user_id}`)
+      
+      return reply.send({ success: true })
+    } catch (error) {
+      logger.error('Failed to leave room:', error)
+      return reply.status(500).send({ error: 'Failed to leave room' })
+    }
+  })
 }

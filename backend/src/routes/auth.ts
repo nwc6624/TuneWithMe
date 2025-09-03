@@ -1,7 +1,14 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+// Session type for Fastify
+interface FastifySession {
+  user_id?: string;
+  display_name?: string;
+  role?: string;
+  authenticated?: boolean;
+}
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { spotifyService } from '../services/spotify.js';
+import { getSpotifyService } from '../services/spotify.js';
 import { redis } from '../services/redis.js';
 import { logger } from '../utils/logger.js';
 
@@ -10,66 +17,99 @@ const startAuthSchema = z.object({
 });
 
 const callbackSchema = z.object({
-  code: z.string(),
-  state: z.string().optional()
+  code: z.string().optional(),
+  state: z.string().optional(),
+  error: z.string().optional()
 });
 
 export async function authRoutes(fastify: FastifyInstance) {
   // Start OAuth flow
   fastify.get('/spotify/start', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
+      logger.info('OAuth start request received');
+      
       const { role } = startAuthSchema.parse(request.query);
+      logger.info(`Role parsed: ${role}`);
       
       // Generate state parameter for security
       const state = uuidv4();
+      logger.info(`Generated state: ${state}`);
       
-      // Store state in session
-      (request.session as any).oauth_state = state;
-      (request.session as any).oauth_role = role;
+      // Store state in Redis with short TTL instead of session
+      logger.info('Attempting to store OAuth state in Redis...');
+      await redis.setOAuthState(state, { role, timestamp: Date.now() });
+      logger.info('OAuth state stored in Redis successfully');
       
-      // Get authorization URL from Spotify
-      const authUrl = spotifyService.getAuthorizationURL(role);
+      // Debug: Log OAuth state storage
+      logger.info(`OAuth state stored in Redis - State: ${state}, Role: ${role}`);
       
-      // Add state parameter to URL
-      const finalUrl = `${authUrl}&state=${state}`;
+      // Get authorization URL from Spotify with state parameter
+      logger.info('Getting Spotify authorization URL...');
+      const authUrl = getSpotifyService().getAuthorizationURL(role, state);
+      logger.info(`Authorization URL generated: ${authUrl}`);
       
       logger.info(`Starting OAuth flow for role: ${role}`);
       
-      return reply.redirect(finalUrl);
+      return reply.redirect(authUrl);
     } catch (error) {
       logger.error('Failed to start OAuth flow:', error);
+      logger.error('Error details:', { message: error.message, stack: error.stack });
       return reply.status(400).send({ error: 'Invalid request parameters' });
     }
   });
 
   // OAuth callback
-  fastify.get('/spotify/callback', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/spotify/callback', async (request: FastifyRequest & { session: FastifySession }, reply: FastifyReply) => {
     try {
-      const { code, state } = callbackSchema.parse(request.query);
-      const session = request.session as any;
+      const { code, state, error } = callbackSchema.parse(request.query);
+      const session = request.session;
       
-      // Verify state parameter
-      if (!session.oauth_state || session.oauth_state !== state) {
-        logger.warn('OAuth state mismatch, possible CSRF attack');
-        return reply.status(400).send({ error: 'Invalid state parameter' });
+      // Handle access denied or other OAuth errors
+      if (error) {
+        logger.warn(`OAuth error: ${error}`);
+        // No session cleanup needed for OAuth state
+        
+        if (error === 'access_denied') {
+          return reply.status(400).send({ error: 'Access denied by user' });
+        } else {
+          return reply.status(400).send({ error: 'OAuth failed' });
+        }
       }
       
-      const role = session.oauth_role;
+      // Check if we have a code
+      if (!code) {
+        logger.error('No authorization code received');
+        return reply.redirect('/?error=no_code');
+      }
+      
+      // Verify state parameter from Redis
+      const oauthState = await redis.getOAuthState(state);
+      if (!oauthState) {
+        logger.warn('OAuth state not found in Redis, possible CSRF attack or expired state');
+        return reply.status(400).send({ error: 'Invalid or expired state parameter' });
+      }
+      
+      const role = oauthState.role;
       if (!role || !['host', 'viewer'].includes(role)) {
-        logger.error('Invalid OAuth role in session');
+        logger.error('Invalid OAuth role in state data');
         return reply.status(400).send({ error: 'Invalid role' });
       }
       
+      // Clean up the OAuth state from Redis
+      await redis.deleteOAuthState(state);
+      
+      logger.info(`OAuth state verified from Redis - State: ${state}, Role: ${role}`);
+      
       // Exchange code for tokens
-      const tokens = await spotifyService.exchangeCodeForTokens(code);
+      const tokens = await getSpotifyService().exchangeCodeForTokens(code);
       
       // Set access token to get user profile
-      spotifyService.setAccessToken(tokens.access_token);
-      const userProfile = await spotifyService.getUserProfile();
+      getSpotifyService().setAccessToken(tokens.access_token);
+      const userProfile = await getSpotifyService().getUserProfile();
       
       if (!userProfile) {
         logger.error('Failed to get user profile after OAuth');
-        return reply.status(500).send({ error: 'Failed to get user profile' });
+        return reply.redirect('/?error=profile_failed');
       }
       
       // Store tokens in Redis
@@ -86,9 +126,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       session.role = role;
       session.authenticated = true;
       
-      // Clear OAuth state
-      delete session.oauth_state;
-      delete session.oauth_role;
+      // OAuth state already cleaned up from Redis
       
       logger.info(`User ${userProfile.display_name} authenticated as ${role}`);
       
@@ -101,21 +139,22 @@ export async function authRoutes(fastify: FastifyInstance) {
       
     } catch (error) {
       logger.error('OAuth callback failed:', error);
+      // OAuth state is stored in Redis, no session cleanup needed
       return reply.status(500).send({ error: 'Authentication failed' });
     }
   });
 
   // Logout
-  fastify.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.post('/logout', async (request: FastifyRequest & { session: FastifySession }, reply: FastifyReply) => {
     try {
-      const session = request.session as any;
+      const session = request.session;
       
       if (session.user_id) {
         // Remove tokens from Redis
         await redis.deleteTokens(session.user_id);
         
         // Clear session
-        session.destroy();
+        (session as any).destroy();
         
         logger.info(`User ${session.user_id} logged out`);
       }
@@ -128,9 +167,9 @@ export async function authRoutes(fastify: FastifyInstance) {
   });
 
   // Get current user info
-  fastify.get('/me', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/me', async (request: FastifyRequest & { session: FastifySession }, reply: FastifyReply) => {
     try {
-      const session = request.session as any;
+      const session = request.session;
       
       if (!session.authenticated || !session.user_id) {
         return reply.status(401).send({ error: 'Not authenticated' });
@@ -153,10 +192,59 @@ export async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Refresh tokens
-  fastify.post('/refresh', async (request: FastifyRequest, reply: FastifyReply) => {
+  // Get current Spotify playback
+  fastify.get('/spotify/currently-playing', async (request: FastifyRequest & { session: FastifySession }, reply: FastifyReply) => {
     try {
-      const session = request.session as any;
+      const session = request.session;
+      
+      if (!session.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' });
+      }
+      
+      // Get user tokens
+      const tokens = await redis.getTokens(session.user_id);
+      if (!tokens) {
+        return reply.status(401).send({ error: 'Tokens not found' });
+      }
+      
+      // Set access token and get current playback
+      getSpotifyService().setAccessToken(tokens.access_token);
+      const playback = await getSpotifyService().getCurrentPlayback();
+      
+      if (!playback) {
+        return reply.send({ 
+          is_playing: false, 
+          track: null,
+          position_ms: 0,
+          duration_ms: 0
+        });
+      }
+      
+      // If user is a host and in a room, update the room's playback state
+      if (tokens.role === 'host') {
+        try {
+          const userRoom = await redis.client.get(`user_room:${session.user_id}`);
+          if (userRoom) {
+            await redis.updatePlaybackState(userRoom, playback);
+            logger.info(`Updated playback state for room ${userRoom}`);
+          }
+        } catch (error) {
+          logger.error('Failed to update room playback state:', error);
+          // Don't fail the request if room update fails
+        }
+      }
+      
+      return reply.send(playback);
+    } catch (error) {
+      logger.error('Failed to get current playback:', error);
+      return reply.status(500).send({ error: 'Failed to get current playback' });
+    }
+  });
+
+  // Refresh tokens
+  fastify.post('/refresh', async (request: FastifyRequest & { session: FastifySession }, reply: FastifyReply) => {
+    try {
+      const session = request.session;
       
       if (!session.authenticated || !session.user_id) {
         return reply.status(401).send({ error: 'Not authenticated' });
@@ -168,7 +256,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
       
       // Refresh tokens
-      const newTokens = await spotifyService.refreshTokens(tokens.refresh_token);
+      const newTokens = await getSpotifyService().refreshTokens(tokens.refresh_token);
       
       // Update stored tokens
       await redis.storeTokens(session.user_id, {

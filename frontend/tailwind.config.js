@@ -37,7 +37,7 @@ export default {
         },
         border: '#e2e8f0',
         ring: '#0ea5e9',
-        background: '#ffffff'
+        'ring-offset': '#ffffff'
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

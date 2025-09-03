@@ -11,6 +11,11 @@ class SpotifyService {
   private client: SpotifyWebApi;
 
   constructor() {
+    console.log('SpotifyService constructor - Environment variables:');
+    console.log('SPOTIFY_CLIENT_ID:', process.env.SPOTIFY_CLIENT_ID);
+    console.log('SPOTIFY_CLIENT_SECRET:', process.env.SPOTIFY_CLIENT_SECRET ? '[SET]' : '[NOT SET]');
+    console.log('SPOTIFY_REDIRECT_URI:', process.env.SPOTIFY_REDIRECT_URI);
+    
     this.client = new SpotifyWebApi({
       clientId: process.env.SPOTIFY_CLIENT_ID,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
@@ -19,12 +24,12 @@ class SpotifyService {
   }
 
   // OAuth methods
-  getAuthorizationURL(role: 'host' | 'viewer'): string {
+  getAuthorizationURL(role: 'host' | 'viewer', state: string): string {
     const scopes = role === 'host' 
       ? ['user-read-currently-playing', 'user-read-playback-state']
       : ['user-modify-playback-state', 'user-read-playback-state'];
 
-    return this.client.createAuthorizeURL(scopes, 'state', true);
+    return this.client.createAuthorizeURL(scopes, state, true);
   }
 
   async exchangeCodeForTokens(code: string): Promise<SpotifyTokens> {
@@ -64,6 +69,49 @@ class SpotifyService {
   }
 
   // Host methods (read-only)
+  async getCurrentPlayback(): Promise<any> {
+    try {
+      const response = await this.client.getMyCurrentPlaybackState();
+      
+      if (!response.body.item) {
+        return {
+          is_playing: false,
+          track: null,
+          position_ms: 0,
+          duration_ms: 0
+        };
+      }
+
+      const track = response.body.item as any;
+      const trackData = {
+        uri: track.uri,
+        isrc: track.external_ids?.isrc,
+        name: track.name,
+        artist: track.artists?.[0]?.name || 'Unknown Artist',
+        album: track.album?.name || 'Unknown Album',
+        duration_ms: track.duration_ms,
+        album_art_url: track.album?.images?.[0]?.url
+      };
+
+      return {
+        track: trackData,
+        is_playing: response.body.is_playing || false,
+        position_ms: response.body.progress_ms || 0,
+        duration_ms: track.duration_ms,
+        context_uri: response.body.context?.uri,
+        updated_at: Date.now()
+      };
+    } catch (error) {
+      logger.error('Failed to get current playback:', error);
+      return {
+        is_playing: false,
+        track: null,
+        position_ms: 0,
+        duration_ms: 0
+      };
+    }
+  }
+
   async getCurrentPlaybackState(): Promise<PlaybackState | null> {
     try {
       const response = await this.client.getMyCurrentPlaybackState();
@@ -247,4 +295,16 @@ class SpotifyService {
   }
 }
 
-export const spotifyService = new SpotifyService();
+// Create a truly lazy-loaded singleton instance
+let _spotifyService: SpotifyService | null = null;
+
+export const getSpotifyService = () => {
+  if (!_spotifyService) {
+    // Only create the service when actually needed
+    _spotifyService = new SpotifyService();
+  }
+  return _spotifyService;
+};
+
+// Remove the backward compatibility export that was causing early instantiation
+// export const spotifyService = getSpotifyService();

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRoom } from '../contexts/RoomContext'
 import { useAuth } from '../contexts/AuthContext'
-import { Play, Pause, Square, Copy, ExternalLink, Music, Users, Radio } from 'lucide-react'
+import { Play, Pause, Square, Copy, ExternalLink, Music, Users, Radio, SkipBack, SkipForward } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function HostDashboard() {
@@ -11,14 +11,19 @@ export default function HostDashboard() {
     playbackState, 
     isConnected, 
     createRoom, 
+    joinRoom,
     startSharing, 
     stopSharing 
   } = useRoom()
   
   const [roomName, setRoomName] = useState('')
+  const [joinRoomId, setJoinRoomId] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [isJoining, setIsJoining] = useState(false)
   const [isStarting, setIsStarting] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
+  const [currentPlayback, setCurrentPlayback] = useState<any>(null)
+  const [isLoadingPlayback, setIsLoadingPlayback] = useState(false)
 
   const handleCreateRoom = async () => {
     if (!roomName.trim()) return
@@ -33,6 +38,22 @@ export default function HostDashboard() {
       console.error('Failed to create room:', error)
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  const handleJoinRoom = async () => {
+    if (!joinRoomId.trim()) return
+    
+    setIsJoining(true)
+    try {
+      const success = await joinRoom(joinRoomId.trim())
+      if (success) {
+        setJoinRoomId('')
+      }
+    } catch (error) {
+      console.error('Failed to join room:', error)
+    } finally {
+      setIsJoining(false)
     }
   }
 
@@ -70,7 +91,8 @@ export default function HostDashboard() {
 
   const getOverlayUrl = () => {
     if (currentRoom) {
-      return `${window.location.origin}/overlay/${currentRoom.id}`
+      // Use the backend URL for the overlay, not the frontend
+      return `http://localhost:3001/overlay/${currentRoom.id}`
     }
     return ''
   }
@@ -91,18 +113,166 @@ export default function HostDashboard() {
   }
 
   const getProgressPercent = () => {
-    if (!playbackState || !playbackState.duration_ms) return 0
-    return (playbackState.position_ms / playbackState.duration_ms) * 100
+    if (!currentPlayback || !currentPlayback.duration_ms) return 0
+    return (currentPlayback.position_ms / currentPlayback.duration_ms) * 100
   }
+
+  // Audio Control Handlers
+  const handlePreviousTrack = async () => {
+    try {
+      const response = await fetch('/auth/spotify/previous', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (response.ok) {
+        // Refresh playback state
+        fetchCurrentPlayback()
+      }
+    } catch (error) {
+      console.error('Failed to go to previous track:', error)
+    }
+  }
+
+  const handleNextTrack = async () => {
+    try {
+      const response = await fetch('/auth/spotify/next', {
+        method: 'POST',
+        credentials: 'include'
+      })
+      if (response.ok) {
+        // Refresh playback state
+        fetchCurrentPlayback()
+      }
+    } catch (error) {
+      console.error('Failed to go to next track:', error)
+    }
+  }
+
+  const handlePlayPause = async () => {
+    try {
+      const endpoint = currentPlayback?.is_playing ? '/auth/spotify/pause' : '/auth/spotify/play'
+      const response = await fetch(endpoint, {
+        method: 'PUT',
+        credentials: 'include'
+      })
+      if (response.ok) {
+        // Refresh playback state
+        fetchCurrentPlayback()
+      }
+    } catch (error) {
+      console.error('Failed to toggle play/pause:', error)
+    }
+  }
+
+  const fetchCurrentPlayback = async () => {
+    setIsLoadingPlayback(true)
+    try {
+      const response = await fetch('/auth/spotify/currently-playing', {
+        credentials: 'include'
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Current playback data:', data)
+        setCurrentPlayback(data)
+      } else {
+        console.error('Failed to fetch current playback')
+        setCurrentPlayback(null)
+      }
+    } catch (error) {
+      console.error('Error fetching current playback:', error)
+      setCurrentPlayback(null)
+    } finally {
+      setIsLoadingPlayback(false)
+    }
+  }
+
+  // Fetch current playback every 5 seconds
+  useEffect(() => {
+    fetchCurrentPlayback()
+    const interval = setInterval(fetchCurrentPlayback, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Host Dashboard</h1>
-        <p className="text-surface-primary/70">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Host Dashboard</h1>
+        <p className="text-gray-600">
           Welcome back, {user?.display_name}! Create a room and start sharing your music.
         </p>
+      </div>
+
+      {/* Current Spotify Playback */}
+      <div className="card mb-6">
+        <div className="card-header">
+          <h2 className="card-title text-gray-900">Current Spotify Playback</h2>
+          <p className="card-description text-gray-600">
+            Your current music status from Spotify
+          </p>
+        </div>
+        <div className="card-content">
+          {isLoadingPlayback ? (
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner size="lg" />
+              <span className="ml-2 text-gray-600">Loading playback...</span>
+            </div>
+          ) : currentPlayback && currentPlayback.track ? (
+            <div className="space-y-4">
+              {/* Track Info */}
+              <div className="flex items-center space-x-4">
+                {currentPlayback.track.album_art_url && (
+                  <img 
+                    src={currentPlayback.track.album_art_url} 
+                    alt="Album Art"
+                    className="w-16 h-16 rounded-lg object-cover"
+                  />
+                )}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {currentPlayback.track.name}
+                  </h3>
+                  <p className="text-gray-600">
+                    {currentPlayback.track.artist} • {currentPlayback.track.album}
+                  </p>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                  currentPlayback.is_playing 
+                    ? 'bg-green-500/20 text-green-700' 
+                    : 'bg-yellow-500/20 text-yellow-700'
+                }`}>
+                  {currentPlayback.is_playing ? 'Playing' : 'Paused'}
+                </div>
+              </div>
+              
+              {/* Progress Bar */}
+              {currentPlayback.duration_ms > 0 && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>{formatTime(currentPlayback.position_ms)}</span>
+                    <span>{formatTime(currentPlayback.duration_ms)}</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${(currentPlayback.position_ms / currentPlayback.duration_ms) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <Music className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600">
+                {currentPlayback?.is_playing === false 
+                  ? 'No music currently playing' 
+                  : 'Start playing music in Spotify to see it here'}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
@@ -112,15 +282,15 @@ export default function HostDashboard() {
           {!currentRoom && (
             <div className="card">
               <div className="card-header">
-                <h2 className="card-title">Create a New Room</h2>
-                <p className="card-description">
+                <h2 className="card-title text-gray-900">Create a New Room</h2>
+                <p className="card-description text-gray-600">
                   Start a new listening session and invite others to join
                 </p>
               </div>
               <div className="card-content">
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="roomName" className="block text-sm font-medium text-surface-primary mb-2">
+                    <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 mb-2">
                       Room Name (Optional)
                     </label>
                     <input
@@ -155,57 +325,107 @@ export default function HostDashboard() {
             </div>
           )}
 
+          {/* Join Room */}
+          {!currentRoom && (
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title text-gray-900">Join a Room</h2>
+                <p className="card-description text-gray-600">
+                  Join someone else's listening session
+                </p>
+              </div>
+              <div className="card-content">
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="joinRoomId" className="block text-sm font-medium text-gray-700 mb-2">
+                      Room ID
+                    </label>
+                    <input
+                      id="joinRoomId"
+                      type="text"
+                      value={joinRoomId}
+                      onChange={(e) => setJoinRoomId(e.target.value)}
+                      placeholder="Enter room ID here"
+                      className="input"
+                      disabled={isJoining}
+                    />
+                  </div>
+                  <button
+                    onClick={handleJoinRoom}
+                    disabled={isJoining || !joinRoomId.trim()}
+                    className="btn-outline w-full"
+                  >
+                    {isJoining ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        Joining Room...
+                      </>
+                    ) : (
+                      <>
+                        <Users className="w-4 h-4 mr-2" />
+                        Join Room
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Current Room */}
           {currentRoom && (
             <div className="card">
               <div className="card-header">
-                <h2 className="card-title">Current Room</h2>
-                <p className="card-description">
+                <h2 className="card-title text-gray-900">Current Room</h2>
+                <p className="card-description text-gray-600">
                   Room ID: {currentRoom.id}
                 </p>
               </div>
               <div className="card-content">
                 <div className="space-y-4">
                   {/* Room Status */}
-                  <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                    <span className="text-sm font-medium">Status</span>
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Status</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       currentRoom.is_active 
-                        ? 'bg-green-500/20 text-green-600' 
-                        : 'bg-yellow-500/20 text-yellow-600'
+                        ? 'bg-green-500/20 text-green-700' 
+                        : 'bg-yellow-500/20 text-yellow-700'
                     }`}>
                       {currentRoom.is_active ? 'Active' : 'Inactive'}
                     </span>
                   </div>
 
                   {/* Member Count */}
-                  <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                    <span className="text-sm font-medium">Members</span>
-                    <span className="flex items-center text-sm text-surface-primary/70">
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Members</span>
+                    <span className="flex items-center text-sm text-gray-600">
                       <Users className="w-4 h-4 mr-1" />
                       {currentRoom.member_count}
+                      {currentRoom.member_count === 1 && (
+                        <span className="ml-1 text-xs text-gray-500">(Self)</span>
+                      )}
                     </span>
                   </div>
 
                   {/* Connection Status */}
-                  <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                    <span className="text-sm font-medium">Connection</span>
+                  <div className="flex items-center justify-between p-3 bg-gray-100 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">Connection</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       isConnected 
-                        ? 'bg-green-500/20 text-green-600' 
-                        : 'bg-red-500/20 text-red-600'
+                        ? 'bg-green-500/20 text-green-700' 
+                        : 'bg-red-500/20 text-red-700'
                     }`}>
                       {isConnected ? 'Connected' : 'Disconnected'}
                     </span>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex space-x-2">
+                  {/* Centered Action Buttons */}
+                  <div className="flex justify-center space-x-3 pt-2">
                     {!currentRoom.is_active ? (
                       <button
                         onClick={handleStartSharing}
                         disabled={isStarting}
-                        className="btn-primary flex-1"
+                        className="inline-flex items-center justify-center rounded-md bg-primary-600 hover:bg-primary-700 text-white px-6 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isStarting ? (
                           <>
@@ -223,7 +443,7 @@ export default function HostDashboard() {
                       <button
                         onClick={handleStopSharing}
                         disabled={isStopping}
-                        className="btn-outline flex-1"
+                        className="inline-flex items-center justify-center rounded-md border border-surface-tertiary bg-transparent hover:bg-surface-secondary px-6 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isStopping ? (
                           <>
@@ -238,13 +458,9 @@ export default function HostDashboard() {
                         )}
                       </button>
                     )}
-                  </div>
-
-                  {/* Room ID Copy */}
-                  <div className="flex space-x-2">
                     <button
                       onClick={copyRoomId}
-                      className="btn-outline flex-1"
+                      className="inline-flex items-center justify-center rounded-md border border-surface-tertiary bg-transparent hover:bg-surface-secondary px-6 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                     >
                       <Copy className="w-4 h-4 mr-2" />
                       Copy Room ID
@@ -266,15 +482,28 @@ export default function HostDashboard() {
               </div>
               <div className="card-content">
                 <div className="space-y-4">
-                  <div className="p-3 bg-surface-secondary rounded-lg">
-                    <p className="text-sm text-surface-primary/70 break-all">
+                  {/* Dimensions Note */}
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Radio className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-800">
+                        Recommended dimensions: <strong>320 × 110 pixels</strong>
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* URL Display */}
+                  <div className="p-3 bg-gray-100 rounded-lg">
+                    <p className="text-sm text-gray-600 break-all font-mono">
                       {getOverlayUrl()}
                     </p>
                   </div>
-                  <div className="flex space-x-2">
+                  
+                  {/* Action Buttons */}
+                  <div className="flex justify-center space-x-3">
                     <button
                       onClick={copyOverlayUrl}
-                      className="btn-outline flex-1"
+                      className="inline-flex items-center justify-center rounded-md border border-surface-tertiary bg-transparent hover:bg-surface-secondary px-6 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                     >
                       <Copy className="w-4 h-4 mr-2" />
                       Copy URL
@@ -283,9 +512,10 @@ export default function HostDashboard() {
                       href={getOverlayUrl()}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="btn-outline"
+                      className="inline-flex items-center justify-center rounded-md border border-surface-tertiary bg-transparent hover:bg-surface-secondary px-6 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Preview
                     </a>
                   </div>
                 </div>
@@ -299,68 +529,137 @@ export default function HostDashboard() {
           {/* Current Track */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title">Now Playing</h2>
-              <p className="card-description">
+              <h2 className="card-title text-gray-900">Now Playing</h2>
+              <p className="card-description text-gray-600">
                 Current track information and playback status
               </p>
             </div>
             <div className="card-content">
-              {playbackState && playbackState.track ? (
+              {currentPlayback && currentPlayback.track ? (
                 <div className="space-y-4">
-                  {/* Album Art */}
-                  <div className="flex justify-center">
-                    <img
-                      src={playbackState.track.album_art_url}
-                      alt="Album Art"
-                      className="w-32 h-32 rounded-lg object-cover shadow-lg"
-                    />
+                  {/* Previous Track */}
+                  <div className="p-3 bg-gray-50 rounded-lg border-l-4 border-gray-300">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                        <SkipBack className="w-5 h-5 text-gray-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700 truncate">
+                          Previous Track
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {currentPlayback.previous_track?.name || 'No previous track'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Track Info */}
+                  {/* Current Track */}
                   <div className="text-center">
-                    <h3 className="text-xl font-semibold text-surface-primary mb-2">
-                      {playbackState.track.name}
-                    </h3>
-                    <p className="text-surface-primary/70 mb-1">
-                      {playbackState.track.artist}
-                    </p>
-                    <p className="text-sm text-surface-primary/50">
-                      {playbackState.track.album}
-                    </p>
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="space-y-2">
-                    <div className="w-full bg-surface-tertiary rounded-full h-2">
-                      <div
-                        className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${getProgressPercent()}%` }}
+                    {/* Album Art */}
+                    <div className="flex justify-center mb-4">
+                      <img
+                        src={currentPlayback.track.album_art_url}
+                        alt="Album Art"
+                        className="w-32 h-32 rounded-lg object-cover shadow-lg"
                       />
                     </div>
-                    <div className="flex justify-between text-sm text-surface-primary/70">
-                      <span>{formatTime(playbackState.position_ms)}</span>
-                      <span>{formatTime(playbackState.duration_ms)}</span>
+
+                    {/* Track Info */}
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {currentPlayback.track.name}
+                    </h3>
+                    <p className="text-gray-600 mb-1">
+                      {currentPlayback.track.artist}
+                    </p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      {currentPlayback.track.album}
+                    </p>
+
+                    {/* Progress Bar */}
+                    <div className="space-y-2 mb-4">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${getProgressPercent()}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-sm text-gray-600">
+                        <span>{formatTime(currentPlayback.position_ms)}</span>
+                        <span>{formatTime(currentPlayback.duration_ms)}</span>
+                      </div>
                     </div>
+
+                    {/* Playback Status */}
+                    <div className="flex items-center justify-center mb-4">
+                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                        currentPlayback.is_playing
+                          ? 'bg-green-500/20 text-green-600'
+                          : 'bg-yellow-500/20 text-yellow-600'
+                      }`}>
+                        {currentPlayback.is_playing ? 'Playing' : 'Paused'}
+                      </div>
+                    </div>
+
+                    {/* Audio Controls - Only for Host */}
+                    {currentRoom && currentRoom.is_active && (
+                      <div className="border-t pt-4">
+                        <p className="text-xs text-gray-500 mb-3">Streamer Controls</p>
+                        <div className="flex justify-center space-x-4">
+                          <button
+                            onClick={handlePreviousTrack}
+                            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                            title="Previous Track"
+                          >
+                            <SkipBack className="w-5 h-5 text-gray-700" />
+                          </button>
+                          <button
+                            onClick={handlePlayPause}
+                            className="p-3 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
+                            title={playbackState.is_playing ? 'Pause' : 'Play'}
+                          >
+                            {playbackState.is_playing ? (
+                              <Pause className="w-5 h-5 text-blue-700" />
+                            ) : (
+                              <Play className="w-5 h-5 text-blue-700" />
+                            )}
+                          </button>
+                          <button
+                            onClick={handleNextTrack}
+                            className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                            title="Next Track"
+                          >
+                            <SkipForward className="w-5 h-5 text-gray-700" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Playback Status */}
-                  <div className="flex items-center justify-center">
-                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      playbackState.is_playing
-                        ? 'bg-green-500/20 text-green-600'
-                        : 'bg-yellow-500/20 text-yellow-600'
-                    }`}>
-                      {playbackState.is_playing ? 'Playing' : 'Paused'}
+                  {/* Next Track */}
+                  <div className="p-3 bg-gray-50 rounded-lg border-l-4 border-blue-300">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                        <SkipForward className="w-5 h-5 text-gray-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-700 truncate">
+                          Next Track
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                          {currentPlayback.next_track?.name || 'No next track'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Music className="w-16 h-16 text-surface-primary/30 mx-auto mb-4" />
-                  <p className="text-surface-primary/50">
+                  <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">
                     No track currently playing
                   </p>
-                  <p className="text-sm text-surface-primary/30 mt-1">
+                  <p className="text-sm text-gray-400 mt-1">
                     Start playing music on Spotify to see it here
                   </p>
                 </div>
@@ -371,24 +670,24 @@ export default function HostDashboard() {
           {/* Instructions */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title">Getting Started</h2>
+              <h2 className="card-title text-gray-900">Getting Started</h2>
             </div>
             <div className="card-content">
-              <div className="space-y-3 text-sm text-surface-primary/70">
+              <div className="space-y-3 text-sm text-gray-600">
                 <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                   <p>Create a room and start sharing</p>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                   <p>Play music normally on Spotify</p>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                   <p>Share the room ID with viewers</p>
                 </div>
                 <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
+                  <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                   <p>Add the overlay URL to OBS</p>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import { redis } from './redis.js';
-import { spotifyService } from './spotify.js';
+import { getSpotifyService } from './spotify.js';
 import { wsManager } from '../websocket/index.js';
 import { logger } from '../utils/logger.js';
 import { PlaybackState, Room } from '../types/index.js';
@@ -148,10 +148,10 @@ class HostPollerService {
       }
 
       // Set access token for API calls
-      spotifyService.setAccessToken(activeRoom.hostTokens.access_token);
+      getSpotifyService().setAccessToken(activeRoom.hostTokens.access_token);
 
       // Get current playback state
-      const currentState = await spotifyService.getCurrentPlaybackState();
+      const currentState = await getSpotifyService().getCurrentPlaybackState();
       
       if (currentState) {
         // Check if state has changed
@@ -209,7 +209,7 @@ class HostPollerService {
 
   private async refreshHostTokens(roomId: string, activeRoom: ActiveRoom) {
     try {
-      const newTokens = await spotifyService.refreshTokens(activeRoom.hostTokens.refresh_token);
+              const newTokens = await getSpotifyService().refreshTokens(activeRoom.hostTokens.refresh_token);
       
       // Update tokens in Redis
       await redis.updateRoom(roomId, { 

@@ -41,15 +41,27 @@ export async function overlayRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Room not found' });
       }
       
-      // Get current playback state
+      // Get current playback state from Redis
       const playbackState = await redis.getPlaybackState(room_id);
+      
+      // Add debugging information
+      const debugInfo = {
+        room_id,
+        room_exists: !!room,
+        playback_state_exists: !!playbackState,
+        playback_data: playbackState,
+        timestamp: new Date().toISOString()
+      };
+      
+      logger.info('Overlay data request:', debugInfo);
       
       return reply.send({
         room: {
           id: room.id,
           is_active: room.is_active
         },
-        playback: playbackState
+        playback: playbackState,
+        debug: debugInfo
       });
     } catch (error) {
       logger.error('Failed to get overlay data:', error);

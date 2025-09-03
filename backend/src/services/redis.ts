@@ -66,8 +66,16 @@ class RedisService {
   }
 
   async getRoom(roomId: string): Promise<any | null> {
-    const roomData = await this.client.hGetAll(`room:${roomId}`);
-    return Object.keys(roomData).length > 0 ? roomData : null;
+    try {
+      const roomData = await this.client.get(`room:${roomId}`);
+      if (!roomData) return null;
+      
+      // Parse JSON string to object
+      return JSON.parse(roomData);
+    } catch (error) {
+      logger.error('Failed to get room:', error);
+      return null;
+    }
   }
 
   async updateRoom(roomId: string, updates: Record<string, any>): Promise<void> {
@@ -111,7 +119,7 @@ class RedisService {
 
   // Playback state
   async updatePlaybackState(roomId: string, state: any): Promise<void> {
-    await this.client.set(`room:${roomId}:playback`, JSON.stringify(state), 'EX', 300); // 5 min TTL
+    await this.client.setEx(`room:${roomId}:playback`, 300, JSON.stringify(state)); // 5 min TTL
   }
 
   async getPlaybackState(roomId: string): Promise<any | null> {
@@ -141,7 +149,7 @@ class RedisService {
 
   // Token management
   async storeTokens(userId: string, tokens: any): Promise<void> {
-    await this.client.set(`tokens:${userId}`, JSON.stringify(tokens), 'EX', 3600); // 1 hour TTL
+    await this.client.setEx(`tokens:${userId}`, 3600, JSON.stringify(tokens)); // 1 hour TTL
   }
 
   async getTokens(userId: string): Promise<any | null> {
@@ -151,6 +159,27 @@ class RedisService {
 
   async deleteTokens(userId: string): Promise<void> {
     await this.client.del(`tokens:${userId}`);
+  }
+
+  // OAuth state management
+  async setOAuthState(state: string, data: any): Promise<void> {
+    await this.client.setEx(`oauth_state:${state}`, 300, JSON.stringify(data)); // 5 min TTL
+  }
+
+  async getOAuthState(state: string): Promise<any | null> {
+    const data = await this.client.get(`oauth_state:${state}`);
+    if (!data) return null;
+    
+    try {
+      return JSON.parse(data);
+    } catch (error) {
+      logger.error('Failed to parse OAuth state data:', error);
+      return null;
+    }
+  }
+
+  async deleteOAuthState(state: string): Promise<void> {
+    await this.client.del(`oauth_state:${state}`);
   }
 
   // Utility methods
