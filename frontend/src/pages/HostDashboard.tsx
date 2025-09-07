@@ -247,9 +247,12 @@ export default function HostDashboard() {
     }
     
     try {
+      console.log('Fetching current playback...')
       const response = await fetch('/auth/spotify/currently-playing', {
         credentials: 'include'
       })
+      
+      console.log('Response status:', response.status)
       
       if (response.ok) {
         const data = await response.json()

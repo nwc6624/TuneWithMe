@@ -203,18 +203,24 @@ export async function authRoutes(fastify: FastifyInstance) {
       const session = request.session;
       
       if (!session.authenticated || !session.user_id) {
+        logger.info('Not authenticated for currently-playing request');
         return reply.status(401).send({ error: 'Not authenticated' });
       }
       
       // Get user tokens
       const tokens = await redis.getTokens(session.user_id);
       if (!tokens) {
+        logger.info('Tokens not found for user:', session.user_id);
         return reply.status(401).send({ error: 'Tokens not found' });
       }
+      
+      logger.info('Getting current playback for user:', session.user_id);
       
       // Set access token and get current playback
       getSpotifyService().setAccessToken(tokens.access_token);
       const playback = await getSpotifyService().getCurrentPlayback();
+      
+      logger.info('Playback result:', playback);
       
       if (!playback) {
         return reply.send({ 
