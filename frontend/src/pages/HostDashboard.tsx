@@ -489,8 +489,20 @@ export default function HostDashboard() {
                     {currentPlayback.track.name}
                   </h3>
                   <p className="text-gray-600">
-                    {currentPlayback.track.artist} • {currentPlayback.track.album}
+                    {currentPlayback.track.type === 'episode' ? (
+                      <>
+                        {currentPlayback.track.show_name || currentPlayback.track.artist}
+                        {currentPlayback.track.publisher && ` • ${currentPlayback.track.publisher}`}
+                      </>
+                    ) : (
+                      `${currentPlayback.track.artist} • ${currentPlayback.track.album}`
+                    )}
                   </p>
+                  {currentPlayback.track.type === 'episode' && (
+                    <p className="text-sm text-blue-600 font-medium">
+                      🎧 Podcast Episode
+                    </p>
+                  )}
                 </div>
                 <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                   currentPlayback.is_playing 
@@ -522,8 +534,8 @@ export default function HostDashboard() {
               <Music className="w-12 h-12 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600">
                 {currentPlayback?.is_playing === false 
-                  ? 'No music currently playing' 
-                  : 'Start playing music in Spotify to see it here'}
+                  ? 'No content currently playing' 
+                  : 'Start playing music, podcasts, or other content in Spotify to see it here'}
               </p>
             </div>
           )}
@@ -969,11 +981,24 @@ export default function HostDashboard() {
                       {currentPlayback.track.name}
                     </h3>
                     <p className="text-gray-600 mb-1">
-                      {currentPlayback.track.artist}
+                      {currentPlayback.track.type === 'episode' ? (
+                        currentPlayback.track.show_name || currentPlayback.track.artist
+                      ) : (
+                        currentPlayback.track.artist
+                      )}
                     </p>
-                    <p className="text-sm text-gray-500 mb-4">
-                      {currentPlayback.track.album}
+                    <p className="text-sm text-gray-500 mb-2">
+                      {currentPlayback.track.type === 'episode' ? (
+                        currentPlayback.track.publisher || 'Podcast'
+                      ) : (
+                        currentPlayback.track.album
+                      )}
                     </p>
+                    {currentPlayback.track.type === 'episode' && (
+                      <p className="text-sm text-blue-600 font-medium mb-4">
+                        🎧 Podcast Episode
+                      </p>
+                    )}
 
                     {/* Progress Bar */}
                     <div className="space-y-2 mb-4">

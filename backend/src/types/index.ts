@@ -12,6 +12,9 @@ export interface SpotifyTrack {
   album: string;
   duration_ms: number;
   album_art_url?: string;
+  type: 'track' | 'episode' | 'ad' | 'unknown';
+  show_name?: string; // For podcasts
+  publisher?: string; // For podcasts/audiobooks
 }
 
 export interface PlaybackState {

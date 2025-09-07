@@ -8,6 +8,9 @@ interface PlaybackState {
     album: string
     duration_ms: number
     album_art_url?: string
+    type: 'track' | 'episode' | 'ad' | 'unknown'
+    show_name?: string
+    publisher?: string
   } | null
   is_playing: boolean
   position_ms: number

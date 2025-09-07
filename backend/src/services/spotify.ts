@@ -91,15 +91,35 @@ class SpotifyService {
       }
 
       const track = response.body.item as any;
-      const trackData = {
+      
+      // Determine content type and extract appropriate metadata
+      let trackData: any = {
         uri: track.uri,
         isrc: track.external_ids?.isrc,
         name: track.name,
-        artist: track.artists?.[0]?.name || 'Unknown Artist',
-        album: track.album?.name || 'Unknown Album',
         duration_ms: track.duration_ms,
-        album_art_url: track.album?.images?.[0]?.url
+        type: track.type || 'unknown'
       };
+
+      if (track.type === 'episode') {
+        // Podcast episode
+        trackData.artist = track.show?.name || 'Unknown Show';
+        trackData.album = track.show?.name || 'Unknown Show';
+        trackData.show_name = track.show?.name;
+        trackData.publisher = track.show?.publisher;
+        trackData.album_art_url = track.images?.[0]?.url || track.show?.images?.[0]?.url;
+      } else if (track.type === 'track') {
+        // Music track
+        trackData.artist = track.artists?.[0]?.name || 'Unknown Artist';
+        trackData.album = track.album?.name || 'Unknown Album';
+        trackData.album_art_url = track.album?.images?.[0]?.url;
+      } else {
+        // Other content types (audiobooks, etc.)
+        trackData.artist = track.artists?.[0]?.name || track.show?.name || 'Unknown';
+        trackData.album = track.album?.name || track.show?.name || 'Unknown';
+        trackData.album_art_url = track.album?.images?.[0]?.url || track.images?.[0]?.url;
+        trackData.publisher = track.show?.publisher;
+      }
 
       return {
         track: trackData,
@@ -129,15 +149,37 @@ class SpotifyService {
       }
 
       const track = response.body.item as any;
-      const trackData: SpotifyTrack = {
+      
+      // Determine content type and extract appropriate metadata
+      let trackData: SpotifyTrack = {
         uri: track.uri,
         isrc: track.external_ids?.isrc,
         name: track.name,
-        artist: track.artists?.[0]?.name || 'Unknown Artist',
-        album: track.album?.name || 'Unknown Album',
         duration_ms: track.duration_ms,
-        album_art_url: track.album?.images?.[0]?.url
+        type: track.type || 'unknown',
+        artist: 'Unknown',
+        album: 'Unknown'
       };
+
+      if (track.type === 'episode') {
+        // Podcast episode
+        trackData.artist = track.show?.name || 'Unknown Show';
+        trackData.album = track.show?.name || 'Unknown Show';
+        trackData.show_name = track.show?.name;
+        trackData.publisher = track.show?.publisher;
+        trackData.album_art_url = track.images?.[0]?.url || track.show?.images?.[0]?.url;
+      } else if (track.type === 'track') {
+        // Music track
+        trackData.artist = track.artists?.[0]?.name || 'Unknown Artist';
+        trackData.album = track.album?.name || 'Unknown Album';
+        trackData.album_art_url = track.album?.images?.[0]?.url;
+      } else {
+        // Other content types (audiobooks, etc.)
+        trackData.artist = track.artists?.[0]?.name || track.show?.name || 'Unknown';
+        trackData.album = track.album?.name || track.show?.name || 'Unknown';
+        trackData.album_art_url = track.album?.images?.[0]?.url || track.images?.[0]?.url;
+        trackData.publisher = track.show?.publisher;
+      }
 
       return {
         track: trackData,
@@ -162,15 +204,37 @@ class SpotifyService {
       }
 
       const track = response.body.item as any;
-      const trackData: SpotifyTrack = {
+      
+      // Determine content type and extract appropriate metadata
+      let trackData: SpotifyTrack = {
         uri: track.uri,
         isrc: track.external_ids?.isrc,
         name: track.name,
-        artist: track.artists?.[0]?.name || 'Unknown Artist',
-        album: track.album?.name || 'Unknown Album',
         duration_ms: track.duration_ms,
-        album_art_url: track.album?.images?.[0]?.url
+        type: track.type || 'unknown',
+        artist: 'Unknown',
+        album: 'Unknown'
       };
+
+      if (track.type === 'episode') {
+        // Podcast episode
+        trackData.artist = track.show?.name || 'Unknown Show';
+        trackData.album = track.show?.name || 'Unknown Show';
+        trackData.show_name = track.show?.name;
+        trackData.publisher = track.show?.publisher;
+        trackData.album_art_url = track.images?.[0]?.url || track.show?.images?.[0]?.url;
+      } else if (track.type === 'track') {
+        // Music track
+        trackData.artist = track.artists?.[0]?.name || 'Unknown Artist';
+        trackData.album = track.album?.name || 'Unknown Album';
+        trackData.album_art_url = track.album?.images?.[0]?.url;
+      } else {
+        // Other content types (audiobooks, etc.)
+        trackData.artist = track.artists?.[0]?.name || track.show?.name || 'Unknown';
+        trackData.album = track.album?.name || track.show?.name || 'Unknown';
+        trackData.album_art_url = track.album?.images?.[0]?.url || track.images?.[0]?.url;
+        trackData.publisher = track.show?.publisher;
+      }
 
       return {
         track: trackData,
