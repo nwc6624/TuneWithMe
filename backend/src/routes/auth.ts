@@ -220,7 +220,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       getSpotifyService().setAccessToken(tokens.access_token);
       const playback = await getSpotifyService().getCurrentPlayback();
       
-      logger.info('Playback result:', playback);
+      logger.info('Playback result:', JSON.stringify(playback, null, 2));
       
       if (!playback) {
         return reply.send({ 

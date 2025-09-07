@@ -73,7 +73,15 @@ class SpotifyService {
     try {
       const response = await this.client.getMyCurrentPlaybackState();
       
+      logger.info('Raw Spotify API response:', JSON.stringify({
+        hasItem: !!response.body.item,
+        isPlaying: response.body.is_playing,
+        device: response.body.device?.name,
+        itemName: response.body.item?.name
+      }, null, 2));
+      
       if (!response.body.item) {
+        logger.info('No current track - returning empty playback state');
         return {
           is_playing: false,
           track: null,
