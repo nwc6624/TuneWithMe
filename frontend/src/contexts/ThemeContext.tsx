@@ -51,7 +51,6 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     const root = document.documentElement
     root.classList.remove('light', 'dark')
     root.classList.add(theme)
-    console.log('Applied theme to document:', theme, 'Classes:', root.classList.toString())
     
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]')

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRoom } from '../contexts/RoomContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
-import { Play, Pause, Copy, ExternalLink, Music, Users, Radio, SkipBack, SkipForward, QrCode, Settings } from 'lucide-react'
+import { Play, Pause, Copy, ExternalLink, Music, Users, Radio, SkipBack, SkipForward, QrCode, Settings, Trash2 } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import QRCodeModal from '../components/QRCodeModal'
 
@@ -16,6 +16,11 @@ export default function HostDashboard() {
     createRoom, 
     joinRoom,
     joinRoomByCode,
+    getMyRooms,
+    updateRoom,
+    startRoom,
+    stopRoom,
+    deleteRoom,
     startSharing, 
     stopSharing 
   } = useRoom()
@@ -36,6 +41,12 @@ export default function HostDashboard() {
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   const [showQRModal, setShowQRModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [myRooms, setMyRooms] = useState<any[]>([])
+  const [recentlyJoinedRooms, setRecentlyJoinedRooms] = useState<any[]>([])
+  const [editingRoom, setEditingRoom] = useState<string | null>(null)
+  const [editRoomName, setEditRoomName] = useState('')
+  const [editRoomDescription, setEditRoomDescription] = useState('')
+  const [editRoomVisibility, setEditRoomVisibility] = useState<'public' | 'private'>('private')
 
   const generateRandomRoomName = () => {
     const adjectives = ['Epic', 'Amazing', 'Chill', 'Vibey', 'Cool', 'Awesome', 'Fire', 'Sick', 'Rad', 'Dope', 'Fresh', 'Smooth', 'Wild', 'Crazy', 'Sweet', 'Nice']
@@ -46,6 +57,72 @@ export default function HostDashboard() {
     const randomNumber = Math.floor(Math.random() * 999) + 1
     
     return `${randomAdjective} ${randomNoun} ${randomNumber}`
+  }
+
+  const loadMyRooms = async () => {
+    try {
+      const rooms = await getMyRooms()
+      setMyRooms(rooms)
+      
+      // Separate recently joined rooms (rooms where user is not host)
+      const recentRooms = rooms.filter(room => !room.is_host)
+      setRecentlyJoinedRooms(recentRooms)
+    } catch (error) {
+      console.error('Failed to load my rooms:', error)
+    }
+  }
+
+  const handleEditRoom = (room: any) => {
+    setEditingRoom(room.id)
+    setEditRoomName(room.name)
+    setEditRoomDescription(room.description || '')
+    setEditRoomVisibility(room.visibility)
+  }
+
+  const handleSaveRoomEdit = async (roomId: string) => {
+    try {
+      const success = await updateRoom(roomId, {
+        name: editRoomName,
+        description: editRoomDescription,
+        visibility: editRoomVisibility
+      })
+      
+      if (success) {
+        setEditingRoom(null)
+        loadMyRooms() // Reload rooms
+      }
+    } catch (error) {
+      console.error('Failed to update room:', error)
+    }
+  }
+
+  const handleStartRoom = async (roomId: string) => {
+    try {
+      await startRoom(roomId)
+      loadMyRooms() // Reload rooms
+    } catch (error) {
+      console.error('Failed to start room:', error)
+    }
+  }
+
+  const handleStopRoom = async (roomId: string) => {
+    try {
+      await stopRoom(roomId)
+      loadMyRooms() // Reload rooms
+    } catch (error) {
+      console.error('Failed to stop room:', error)
+    }
+  }
+
+  const handleDeleteRoom = async (roomId: string) => {
+    if (window.confirm('Are you sure you want to delete this room? This action cannot be undone.')) {
+      try {
+        await deleteRoom(roomId)
+        loadMyRooms() // Reload rooms
+      } catch (error) {
+        console.error('Failed to delete room:', error)
+      }
+    }
   }
 
   const handleCreateRoom = async () => {
@@ -174,6 +251,11 @@ export default function HostDashboard() {
   // Smooth progress bar updates
   const [smoothProgress, setSmoothProgress] = useState(0)
   
+  // Load user's rooms on component mount
+  useEffect(() => {
+    loadMyRooms()
+  }, [])
+
   useEffect(() => {
     if (currentPlayback?.is_playing && currentPlayback.duration_ms > 0) {
       const targetProgress = getProgressPercent()
@@ -431,9 +513,12 @@ export default function HostDashboard() {
                     <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       Auto-refresh playback
                     </span>
-                    <button className={`w-12 h-6 rounded-full transition-colors ${
-                      true ? 'bg-green-500' : 'bg-gray-300'
-                    }`}>
+                    <button 
+                      className={`w-12 h-6 rounded-full transition-colors ${
+                        true ? 'bg-green-500' : 'bg-gray-300'
+                      }`}
+                      title="Toggle auto-refresh playback"
+                    >
                       <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
                         true ? 'translate-x-6' : 'translate-x-0.5'
                       }`} />
@@ -443,9 +528,12 @@ export default function HostDashboard() {
                     <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       Show notifications
                     </span>
-                    <button className={`w-12 h-6 rounded-full transition-colors ${
-                      true ? 'bg-green-500' : 'bg-gray-300'
-                    }`}>
+                    <button 
+                      className={`w-12 h-6 rounded-full transition-colors ${
+                        true ? 'bg-green-500' : 'bg-gray-300'
+                      }`}
+                      title="Toggle show notifications"
+                    >
                       <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
                         true ? 'translate-x-6' : 'translate-x-0.5'
                       }`} />
@@ -559,6 +647,199 @@ export default function HostDashboard() {
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left Column - Room Management */}
         <div className="space-y-6">
+          {/* My Rooms */}
+          {myRooms.length > 0 && (
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">My Rooms</h2>
+                <p className="card-description">
+                  Manage your rooms and control sharing
+                </p>
+              </div>
+              <div className="card-content">
+                <div className="space-y-4">
+                  {myRooms.map((room) => (
+                    <div key={room.id} className={`p-4 rounded-lg border transition-colors duration-200 ${
+                      isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex-1">
+                          {editingRoom === room.id ? (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={editRoomName}
+                                onChange={(e) => setEditRoomName(e.target.value)}
+                                className="input w-full"
+                                placeholder="Room name"
+                              />
+                              <textarea
+                                value={editRoomDescription}
+                                onChange={(e) => setEditRoomDescription(e.target.value)}
+                                className="input w-full"
+                                placeholder="Room description (optional)"
+                                rows={2}
+                              />
+                              <div className="flex space-x-2">
+                                <select
+                                  value={editRoomVisibility}
+                                  onChange={(e) => setEditRoomVisibility(e.target.value as 'public' | 'private')}
+                                  className="input"
+                                  title="Room visibility setting"
+                                >
+                                  <option value="private">Private</option>
+                                  <option value="public">Public</option>
+                                </select>
+                                <button
+                                  onClick={() => handleSaveRoomEdit(room.id)}
+                                  className="btn-primary btn-sm"
+                                  title="Save room changes"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingRoom(null)}
+                                  className="btn-outline btn-sm"
+                                  title="Cancel editing"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <h3 className={`font-semibold text-lg transition-colors duration-200 ${
+                                isDark ? 'text-white' : 'text-gray-900'
+                              }`}>
+                                {room.name}
+                              </h3>
+                              {room.description && (
+                                <p className={`text-sm mt-1 transition-colors duration-200 ${
+                                  isDark ? 'text-slate-300' : 'text-gray-600'
+                                }`}>
+                                  {room.description}
+                                </p>
+                              )}
+                              <div className="flex items-center space-x-4 mt-2">
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  room.visibility === 'public' 
+                                    ? 'bg-green-100 text-green-800' 
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {room.visibility}
+                                </span>
+                                <span className={`text-xs transition-colors duration-200 ${
+                                  isDark ? 'text-slate-400' : 'text-gray-500'
+                                }`}>
+                                  {room.member_count} member{room.member_count !== 1 ? 's' : ''}
+                                </span>
+                                <span className={`text-xs transition-colors duration-200 ${
+                                  isDark ? 'text-slate-400' : 'text-gray-500'
+                                }`}>
+                                  {room.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {editingRoom !== room.id && (
+                          <div className="flex space-x-2">
+                            {room.is_host && (
+                              <>
+                                <button
+                                  onClick={() => handleEditRoom(room)}
+                                  className="btn-outline btn-sm"
+                                  title="Edit room"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                </button>
+                                {room.is_active ? (
+                                  <button
+                                    onClick={() => handleStopRoom(room.id)}
+                                    className="btn-sm btn-outline text-red-600 hover:bg-red-50"
+                                    title="Stop sharing"
+                                  >
+                                    <Pause className="w-4 h-4 mr-1" />
+                                    Stop
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleStartRoom(room.id)}
+                                    className="btn-sm btn-primary"
+                                    title="Start sharing"
+                                  >
+                                    <Play className="w-4 h-4 mr-1" />
+                                    Start
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleDeleteRoom(room.id)}
+                                  className="btn-sm btn-outline text-red-600 hover:bg-red-50"
+                                  title="Delete room"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => joinRoom(room.id)}
+                              className="btn-secondary btn-sm"
+                              title="Join room"
+                            >
+                              Join
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Recently Joined Rooms */}
+          {recentlyJoinedRooms.length > 0 && (
+            <div id="recent-rooms" className="card">
+              <div className="card-header">
+                <h2 className="card-title">Recently Joined Rooms</h2>
+                <p className="card-description">
+                  Rooms you've joined recently
+                </p>
+              </div>
+              <div className="card-content">
+                <div className="space-y-3">
+                  {recentlyJoinedRooms.map((room) => (
+                    <div key={room.id} className={`p-3 rounded-lg border transition-colors duration-200 ${
+                      isDark ? 'bg-slate-700 border-slate-600' : 'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className={`font-medium transition-colors duration-200 ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {room.name}
+                          </h4>
+                          <p className={`text-sm transition-colors duration-200 ${
+                            isDark ? 'text-slate-300' : 'text-gray-600'
+                          }`}>
+                            Host: {room.host_name} • {room.member_count} member{room.member_count !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => joinRoom(room.id)}
+                          className="btn-secondary btn-sm"
+                        >
+                          Rejoin
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Create Room */}
           {!currentRoom && (
             <div className="card">
@@ -666,11 +947,21 @@ export default function HostDashboard() {
                   Join someone else's listening session
                 </p>
                 <div className="mt-2">
-                  <a 
-                    href="/public-rooms" 
+                  <a
+                    href={recentlyJoinedRooms.length > 0 ? "#recent-rooms" : "/public-rooms"}
                     className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    onClick={(e) => {
+                      if (recentlyJoinedRooms.length > 0) {
+                        e.preventDefault()
+                        // Scroll to recently joined rooms section
+                        const element = document.querySelector('#recent-rooms')
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth' })
+                        }
+                      }
+                    }}
                   >
-                    Browse public rooms →
+                    {recentlyJoinedRooms.length > 0 ? 'Recently joined rooms →' : 'Browse public rooms →'}
                   </a>
                 </div>
               </div>
@@ -1108,10 +1399,12 @@ export default function HostDashboard() {
           {/* Instructions */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title text-gray-900">Getting Started</h2>
+              <h2 className="card-title">Getting Started</h2>
             </div>
             <div className="card-content">
-              <div className="space-y-3 text-sm text-gray-600">
+              <div className={`space-y-3 text-sm transition-colors duration-200 ${
+                isDark ? 'text-slate-300' : 'text-gray-600'
+              }`}>
                 <div className="flex items-start space-x-2">
                   <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
                   <p>Create a room and start sharing</p>

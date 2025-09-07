@@ -24,6 +24,51 @@ const joinRoomSchema = z.object({
 // })
 
 export default async function roomRoutes(fastify: FastifyInstance) {
+  // Get user's rooms (rooms they host or are a member of)
+  fastify.get('/rooms/my-rooms', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
+      }
+
+      // Get all room keys
+      const keys = await redis.getClient().keys('room:*')
+      const userRooms = []
+
+      for (const key of keys) {
+        const roomData = await redis.getClient().get(key)
+        if (roomData) {
+          const room = JSON.parse(roomData)
+          // Include rooms where user is host or member
+          if (room.host_user_id === session.user_id || room.members?.includes(session.user_id)) {
+            userRooms.push({
+              id: room.id,
+              name: room.name,
+              description: room.description,
+              host_name: room.host_name,
+              host_user_id: room.host_user_id,
+              visibility: room.visibility,
+              room_code: room.room_code,
+              member_count: room.member_count,
+              is_active: room.is_active,
+              created_at: room.created_at,
+              is_host: room.host_user_id === session.user_id
+            })
+          }
+        }
+      }
+
+      // Sort by creation date (newest first)
+      userRooms.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+      return reply.send({ rooms: userRooms })
+    } catch (error) {
+      logger.error('Failed to get user rooms:', error)
+      return reply.status(500).send({ error: 'Failed to get user rooms' })
+    }
+  })
+
   // Get list of public rooms
   fastify.get('/rooms/public', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -418,6 +463,104 @@ export default async function roomRoutes(fastify: FastifyInstance) {
     } catch (error) {
       logger.error('Failed to leave room:', error)
       return reply.status(500).send({ error: 'Failed to leave room' })
+    }
+  })
+
+  // Update room settings
+  fastify.put('/rooms/:roomId', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
+      }
+
+      const { roomId } = request.params as { roomId: string }
+      const { name, description, visibility } = request.body as { name?: string, description?: string, visibility?: 'public' | 'private' }
+      
+      // Get room data
+      const roomData = await redis.getClient().get(`room:${roomId}`)
+      if (!roomData) {
+        return reply.status(404).send({ error: 'Room not found' })
+      }
+
+      const room = JSON.parse(roomData)
+      
+      // Check if user is the host
+      if (room.host_user_id !== session.user_id) {
+        return reply.status(403).send({ error: 'Only the host can edit the room' })
+      }
+
+      // Update room properties
+      if (name !== undefined) room.name = name
+      if (description !== undefined) room.description = description
+      if (visibility !== undefined) {
+        room.visibility = visibility
+        // Generate new room code if changing to private
+        if (visibility === 'private' && !room.room_code) {
+          room.room_code = Math.random().toString(36).substr(2, 6).toUpperCase()
+        } else if (visibility === 'public') {
+          room.room_code = undefined
+        }
+      }
+
+      // Update room in Redis
+      await redis.getClient().setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+
+      return reply.send({ 
+        message: 'Room updated successfully',
+        room: {
+          id: room.id,
+          name: room.name,
+          description: room.description,
+          visibility: room.visibility,
+          room_code: room.room_code
+        }
+      })
+    } catch (error) {
+      logger.error('Failed to update room:', error)
+      return reply.status(500).send({ error: 'Failed to update room' })
+    }
+  })
+
+  // Delete room
+  fastify.delete('/rooms/:roomId', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const session = (request as any).session
+      if (!session?.authenticated || !session.user_id) {
+        return reply.status(401).send({ error: 'Not authenticated' })
+      }
+
+      const { roomId } = request.params as { roomId: string }
+      
+      // Get room data
+      const roomData = await redis.getClient().get(`room:${roomId}`)
+      if (!roomData) {
+        return reply.status(404).send({ error: 'Room not found' })
+      }
+
+      const room = JSON.parse(roomData)
+      
+      // Check if user is the host
+      if (room.host_user_id !== session.user_id) {
+        return reply.status(403).send({ error: 'Only the host can delete the room' })
+      }
+
+      // Delete room from Redis
+      await redis.getClient().del(`room:${roomId}`)
+      
+      // Remove from host poller if active
+      const { hostPoller } = await import('../services/hostPoller.js')
+      await hostPoller.removeRoom(roomId)
+
+      logger.info(`Room ${roomId} deleted by user: ${session.user_id}`)
+      
+      return reply.send({ 
+        message: 'Room deleted successfully',
+        success: true
+      })
+    } catch (error) {
+      logger.error('Failed to delete room:', error)
+      return reply.status(500).send({ error: 'Failed to delete room' })
     }
   })
 }

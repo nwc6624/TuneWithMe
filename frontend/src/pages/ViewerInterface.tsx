@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRoom } from '../contexts/RoomContext'
 import { useAuth } from '../contexts/AuthContext'
+import { useTheme } from '../contexts/ThemeContext'
 import { Headphones, Users, Music, Radio, Wifi, WifiOff } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -15,12 +16,14 @@ interface SpotifyDevice {
 
 export default function ViewerInterface() {
   const { user: _user } = useAuth()
+  const { isDark } = useTheme()
   const { 
     currentRoom, 
     playbackState, 
     isConnected, 
     joinRoom, 
-    leaveRoom 
+    leaveRoom,
+    getPublicRooms
   } = useRoom()
   
   const [roomId, setRoomId] = useState('')
@@ -29,12 +32,18 @@ export default function ViewerInterface() {
   const [devices, setDevices] = useState<SpotifyDevice[]>([])
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>('')
   const [isLoadingDevices, setIsLoadingDevices] = useState(false)
+  const [publicRooms, setPublicRooms] = useState<any[]>([])
+  const [isLoadingPublicRooms, setIsLoadingPublicRooms] = useState(false)
 
   useEffect(() => {
     if (currentRoom) {
       loadDevices()
     }
   }, [currentRoom])
+
+  useEffect(() => {
+    loadPublicRooms()
+  }, [])
 
   const loadDevices = async () => {
     setIsLoadingDevices(true)
@@ -62,6 +71,18 @@ export default function ViewerInterface() {
     }
   }
 
+  const loadPublicRooms = async () => {
+    setIsLoadingPublicRooms(true)
+    try {
+      const rooms = await getPublicRooms()
+      setPublicRooms(rooms)
+    } catch (error) {
+      console.error('Failed to load public rooms:', error)
+    } finally {
+      setIsLoadingPublicRooms(false)
+    }
+  }
+
   const handleJoinRoom = async () => {
     if (!roomId.trim()) return
     
@@ -73,6 +94,20 @@ export default function ViewerInterface() {
       }
     } catch (error) {
       console.error('Failed to join room:', error)
+    } finally {
+      setIsJoining(false)
+    }
+  }
+
+  const handleJoinPublicRoom = async (roomId: string) => {
+    setIsJoining(true)
+    try {
+      const success = await joinRoom(roomId, selectedDeviceId)
+      if (success) {
+        setRoomId('')
+      }
+    } catch (error) {
+      console.error('Failed to join public room:', error)
     } finally {
       setIsJoining(false)
     }
@@ -244,6 +279,90 @@ export default function ViewerInterface() {
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Public Rooms */}
+          {!currentRoom && (
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">Public Rooms</h2>
+                <p className="card-description">
+                  Join any of these active public rooms
+                </p>
+              </div>
+              <div className="card-content">
+                {isLoadingPublicRooms ? (
+                  <div className="flex items-center justify-center p-4">
+                    <LoadingSpinner size="sm" />
+                    <span className={`ml-2 text-sm transition-colors duration-200 ${
+                      isDark ? 'text-slate-300' : 'text-gray-600'
+                    }`}>Loading public rooms...</span>
+                  </div>
+                ) : publicRooms.length > 0 ? (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {publicRooms.map((room) => (
+                      <div
+                        key={room.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-surface-tertiary hover:border-primary-400/50 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <h4 className={`font-medium transition-colors duration-200 ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}>{room.name}</h4>
+                          <p className={`text-sm transition-colors duration-200 ${
+                            isDark ? 'text-slate-300' : 'text-gray-600'
+                          }`}>
+                            Host: {room.host_name} • {room.member_count} member{room.member_count !== 1 ? 's' : ''}
+                          </p>
+                          {room.description && (
+                            <p className={`text-xs mt-1 transition-colors duration-200 ${
+                              isDark ? 'text-slate-400' : 'text-gray-500'
+                            }`}>{room.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            room.is_active 
+                              ? 'bg-green-500/20 text-green-600' 
+                              : 'bg-yellow-500/20 text-yellow-600'
+                          }`}>
+                            {room.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                          <button
+                            onClick={() => handleJoinPublicRoom(room.id)}
+                            disabled={isJoining || !selectedDeviceId}
+                            className="btn-primary btn-sm"
+                          >
+                            {isJoining ? (
+                              <LoadingSpinner size="sm" />
+                            ) : (
+                              <>
+                                <Headphones className="w-4 h-4 mr-1" />
+                                Join
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className={`w-12 h-12 mx-auto mb-3 transition-colors duration-200 ${
+                      isDark ? 'text-slate-500' : 'text-gray-400'
+                    }`} />
+                    <p className={`transition-colors duration-200 ${
+                      isDark ? 'text-slate-400' : 'text-gray-500'
+                    }`}>No public rooms available</p>
+                    <p className={`text-sm mt-1 transition-colors duration-200 ${
+                      isDark ? 'text-slate-500' : 'text-gray-400'
+                    }`}>
+                      Check back later or ask a host to create a public room
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

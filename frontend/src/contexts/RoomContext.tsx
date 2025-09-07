@@ -31,6 +31,7 @@ interface Room {
   is_active: boolean
   member_count: number
   members: string[]
+  is_host?: boolean
 }
 
 interface RoomContextType {
@@ -40,10 +41,15 @@ interface RoomContextType {
   joinRoom: (roomId: string, deviceId?: string) => Promise<boolean>
   joinRoomByCode: (roomCode: string) => Promise<boolean>
   getPublicRooms: () => Promise<Room[]>
+  getMyRooms: () => Promise<Room[]>
   leaveRoom: () => Promise<void>
   createRoom: (name?: string, visibility?: 'public' | 'private', description?: string) => Promise<string | null>
   startSharing: () => Promise<boolean>
   stopSharing: () => Promise<boolean>
+  updateRoom: (roomId: string, updates: { name?: string, description?: string, visibility?: 'public' | 'private' }) => Promise<boolean>
+  startRoom: (roomId: string) => Promise<boolean>
+  stopRoom: (roomId: string) => Promise<boolean>
+  deleteRoom: (roomId: string) => Promise<boolean>
   sendControlMessage: (action: string, data: any) => void
 }
 
@@ -248,6 +254,123 @@ export function RoomProvider({ children }: RoomProviderProps) {
     }
   }
 
+  const getMyRooms = async (): Promise<Room[]> => {
+    try {
+      const response = await fetch('/api/rooms/my-rooms', {
+        method: 'GET',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.rooms || []
+      } else {
+        console.error('Failed to get my rooms')
+        return []
+      }
+    } catch (error) {
+      console.error('Failed to get my rooms:', error)
+      return []
+    }
+  }
+
+  const updateRoom = async (roomId: string, updates: { name?: string, description?: string, visibility?: 'public' | 'private' }): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Update current room if it's the one being updated
+        if (currentRoom?.id === roomId) {
+          setCurrentRoom({ ...currentRoom, ...data.room })
+        }
+        return true
+      } else {
+        console.error('Failed to update room')
+        return false
+      }
+    } catch (error) {
+      console.error('Failed to update room:', error)
+      return false
+    }
+  }
+
+  const startRoom = async (roomId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/start`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        // Update current room if it's the one being started
+        if (currentRoom?.id === roomId) {
+          setCurrentRoom({ ...currentRoom, is_active: true })
+        }
+        return true
+      } else {
+        console.error('Failed to start room')
+        return false
+      }
+    } catch (error) {
+      console.error('Failed to start room:', error)
+      return false
+    }
+  }
+
+  const stopRoom = async (roomId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}/stop`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        // Update current room if it's the one being stopped
+        if (currentRoom?.id === roomId) {
+          setCurrentRoom({ ...currentRoom, is_active: false })
+        }
+        return true
+      } else {
+        console.error('Failed to stop room')
+        return false
+      }
+    } catch (error) {
+      console.error('Failed to stop room:', error)
+      return false
+    }
+  }
+
+  const deleteRoom = async (roomId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/rooms/${roomId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        // Clear current room if it's the one being deleted
+        if (currentRoom?.id === roomId) {
+          setCurrentRoom(null)
+        }
+        return true
+      } else {
+        console.error('Failed to delete room')
+        return false
+      }
+    } catch (error) {
+      console.error('Failed to delete room:', error)
+      return false
+    }
+  }
+
   const joinRoom = async (roomId: string, deviceId?: string): Promise<boolean> => {
     try {
       const response = await fetch(`/api/rooms/${roomId}/join`, {
@@ -379,10 +502,15 @@ export function RoomProvider({ children }: RoomProviderProps) {
     joinRoom,
     joinRoomByCode,
     getPublicRooms,
+    getMyRooms,
     leaveRoom,
     createRoom,
     startSharing,
     stopSharing,
+    updateRoom,
+    startRoom,
+    stopRoom,
+    deleteRoom,
     sendControlMessage
   }
 
