@@ -48,9 +48,9 @@ await fastify.register(session, {
     secure: false, // Force false for development to work with HTTP
     httpOnly: true,
     sameSite: 'lax', // Use lax for better compatibility
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days instead of 24 hours
     path: '/'
-    // Remove domain: undefined to avoid TypeScript error
+    // Remove domain property to avoid TypeScript issues
   }
 });
 

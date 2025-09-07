@@ -35,7 +35,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     checkAuthStatus()
-  }, [])
+    
+    // Set up automatic token refresh every 30 minutes
+    const refreshInterval = setInterval(() => {
+      if (user) {
+        refreshTokens()
+      }
+    }, 30 * 60 * 1000) // 30 minutes
+    
+    return () => clearInterval(refreshInterval)
+  }, [user])
 
   const checkAuthStatus = async () => {
     try {
