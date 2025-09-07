@@ -312,33 +312,34 @@ export default function HostDashboard() {
   }, [currentPlayback?.is_playing])
 
   return (
-    <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className={`mb-8 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                🎵 Host Dashboard
-              </h1>
-              <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                Welcome back, <span className="font-semibold text-green-600">{user?.display_name}</span>! 
-                Create a room and start sharing your music.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className={`p-3 rounded-lg transition-colors ${
-                isDarkMode 
+    <div className="max-w-6xl mx-auto">
+      {/* Header */}
+      <div className={`mb-8 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              🎵 Host Dashboard
+            </h1>
+            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Welcome back, <span className="font-semibold text-green-600">{user?.display_name}</span>! 
+              Create a room and start sharing your music.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-3 rounded-lg transition-all duration-200 ${
+              showSettings
+                ? 'bg-blue-500 text-white shadow-lg'
+                : isDarkMode 
                   ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
-              }`}
-              title="Settings"
-            >
-              <Settings className="w-6 h-6" />
-            </button>
-          </div>
+            }`}
+            title={showSettings ? "Close Settings" : "Open Settings"}
+          >
+            <Settings className="w-6 h-6" />
+          </button>
         </div>
+      </div>
 
         {/* Settings Panel */}
         {showSettings && (
@@ -1130,7 +1131,6 @@ export default function HostDashboard() {
           roomId={currentRoom.id}
         />
       )}
-      </div>
     </div>
   )
 }
