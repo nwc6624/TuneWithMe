@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import LandingPage from './pages/LandingPage'
 import HostDashboard from './pages/HostDashboard'
 import ViewerInterface from './pages/ViewerInterface'
@@ -20,71 +21,73 @@ function App() {
   }
 
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<LandingPage />} />
-      
-      {/* Protected routes */}
-      <Route
-        path="/dashboard"
-        element={
-          user && user.role === 'host' ? (
-            <Layout>
-              <HostDashboard />
-            </Layout>
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
-      
-      <Route
-        path="/viewer"
-        element={
-          user && user.role === 'viewer' ? (
-            <Layout>
-              <ViewerInterface />
-            </Layout>
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
-      
-      <Route
-        path="/room/:roomId"
-        element={
-          user ? (
-            <Layout>
-              {user.role === 'host' ? <HostDashboard /> : <ViewerInterface />}
-            </Layout>
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
-      
-      <Route
-        path="/public-rooms"
-        element={
-          user ? (
-            <Layout>
-              <PublicRooms />
-            </Layout>
-          ) : (
-            <Navigate to="/" replace />
-          )
-        }
-      />
-      
-      <Route
-        path="/join/:code"
-        element={<JoinRoom />}
-      />
-      
-      {/* Catch all route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <ThemeProvider>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
+        
+        {/* Protected routes */}
+        <Route
+          path="/dashboard"
+          element={
+            user && user.role === 'host' ? (
+              <Layout>
+                <HostDashboard />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        
+        <Route
+          path="/viewer"
+          element={
+            user && user.role === 'viewer' ? (
+              <Layout>
+                <ViewerInterface />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        
+        <Route
+          path="/room/:roomId"
+          element={
+            user ? (
+              <Layout>
+                {user.role === 'host' ? <HostDashboard /> : <ViewerInterface />}
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        
+        <Route
+          path="/public-rooms"
+          element={
+            user ? (
+              <Layout>
+                <PublicRooms />
+              </Layout>
+            ) : (
+              <Navigate to="/" replace />
+            )
+          }
+        />
+        
+        <Route
+          path="/join/:code"
+          element={<JoinRoom />}
+        />
+        
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </ThemeProvider>
   )
 }
 

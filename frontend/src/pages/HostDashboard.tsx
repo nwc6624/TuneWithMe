@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useRoom } from '../contexts/RoomContext'
 import { useAuth } from '../contexts/AuthContext'
-import { Play, Pause, Copy, ExternalLink, Music, Users, Radio, SkipBack, SkipForward, QrCode, Settings, Sun, Moon } from 'lucide-react'
+import { useTheme } from '../contexts/ThemeContext'
+import { Play, Pause, Copy, ExternalLink, Music, Users, Radio, SkipBack, SkipForward, QrCode, Settings } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 import QRCodeModal from '../components/QRCodeModal'
 
 export default function HostDashboard() {
   const { user } = useAuth()
+  const { isDark } = useTheme()
   const { 
     currentRoom, 
     playbackState, 
@@ -34,7 +36,6 @@ export default function HostDashboard() {
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   const [showQRModal, setShowQRModal] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(false)
 
   const generateRandomRoomName = () => {
     const adjectives = ['Epic', 'Amazing', 'Chill', 'Vibey', 'Cool', 'Awesome', 'Fire', 'Sick', 'Rad', 'Dope', 'Fresh', 'Smooth', 'Wild', 'Crazy', 'Sweet', 'Nice']
@@ -314,13 +315,19 @@ export default function HostDashboard() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className={`mb-8 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`mb-8 p-6 rounded-lg transition-colors duration-200 ${
+        isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+      } shadow-sm border`}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className={`text-4xl font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+            <h1 className={`text-4xl font-bold mb-2 transition-colors duration-200 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
               🎵 Host Dashboard
             </h1>
-            <p className={`text-lg ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+            <p className={`text-lg transition-colors duration-200 ${
+              isDark ? 'text-slate-300' : 'text-gray-600'
+            }`}>
               Welcome back, <span className="font-semibold text-green-600">{user?.display_name}</span>! 
               Create a room and start sharing your music.
             </p>
@@ -330,8 +337,8 @@ export default function HostDashboard() {
             className={`p-3 rounded-lg transition-all duration-200 ${
               showSettings
                 ? 'bg-blue-500 text-white shadow-lg'
-                : isDarkMode 
-                  ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
+                : isDark 
+                  ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
             }`}
             title={showSettings ? "Close Settings" : "Open Settings"}
@@ -343,43 +350,49 @@ export default function HostDashboard() {
 
         {/* Settings Panel */}
         {showSettings && (
-          <div className={`mb-6 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <h2 className={`text-xl font-semibold mb-4 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+          <div className={`mb-6 p-6 rounded-lg transition-colors duration-200 ${
+            isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
+          } shadow-sm border`}>
+            <h2 className={`text-xl font-semibold mb-4 transition-colors duration-200 ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
               Settings
             </h2>
             <div className="space-y-4">
-              {/* Theme Toggle */}
+              {/* Theme Info */}
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className={`font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                  <h3 className={`font-medium transition-colors duration-200 ${
+                    isDark ? 'text-slate-200' : 'text-gray-700'
+                  }`}>
                     Theme
                   </h3>
-                  <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Switch between light and dark mode
+                  <p className={`text-sm transition-colors duration-200 ${
+                    isDark ? 'text-slate-400' : 'text-gray-500'
+                  }`}>
+                    Use the theme toggle in the navigation bar
                   </p>
                 </div>
-                <button
-                  onClick={() => setIsDarkMode(!isDarkMode)}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                    isDarkMode 
-                      ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' 
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  <span>{isDarkMode ? 'Light' : 'Dark'} Mode</span>
-                </button>
+                <div className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
+                  isDark 
+                    ? 'bg-slate-700 text-slate-200' 
+                    : 'bg-gray-100 text-gray-700'
+                }`}>
+                  <span>{isDark ? 'Dark' : 'Light'} Mode</span>
+                </div>
               </div>
 
               {/* Room Settings */}
               {currentRoom && (
                 <div className="border-t pt-4">
-                  <h3 className={`font-medium mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                  <h3 className={`font-medium mb-3 transition-colors duration-200 ${
+                    isDark ? 'text-slate-200' : 'text-gray-700'
+                  }`}>
                     Current Room Settings
                   </h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                         Room Name: {currentRoom.name}
                       </span>
                       <button className="text-blue-600 hover:text-blue-800 text-sm">
@@ -387,7 +400,7 @@ export default function HostDashboard() {
                       </button>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                         Visibility: {currentRoom.visibility === 'public' ? '🌐 Public' : '🔒 Private'}
                       </span>
                       <button className="text-blue-600 hover:text-blue-800 text-sm">
@@ -396,7 +409,7 @@ export default function HostDashboard() {
                     </div>
                     {currentRoom.description && (
                       <div className="flex items-center justify-between">
-                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                           Description: {currentRoom.description}
                         </span>
                         <button className="text-blue-600 hover:text-blue-800 text-sm">
@@ -410,12 +423,12 @@ export default function HostDashboard() {
 
               {/* App Settings */}
               <div className="border-t pt-4">
-                <h3 className={`font-medium mb-3 ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                <h3 className={`font-medium mb-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
                   App Settings
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       Auto-refresh playback
                     </span>
                     <button className={`w-12 h-6 rounded-full transition-colors ${
@@ -427,7 +440,7 @@ export default function HostDashboard() {
                     </button>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       Show notifications
                     </span>
                     <button className={`w-12 h-6 rounded-full transition-colors ${
@@ -445,14 +458,14 @@ export default function HostDashboard() {
         )}
 
       {/* Current Spotify Playback */}
-      <div className={`mb-6 p-6 rounded-lg ${isDarkMode ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+      <div className={`mb-6 p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-sm border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="mb-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 🎵 Current Spotify Playback
               </h2>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 Your current music status from Spotify
               </p>
             </div>
