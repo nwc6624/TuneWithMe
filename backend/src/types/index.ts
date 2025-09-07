@@ -32,12 +32,19 @@ export interface RoomSettings {
 export interface Room {
   id: string;
   host_user_id: string;
-  created_at: Date;
-  settings: RoomSettings;
-  active_track: SpotifyTrack | null;
-  last_state: PlaybackState | null;
-  host_tokens: SpotifyTokens;
+  host_name: string;
+  name: string;
+  description?: string;
+  visibility: 'public' | 'private';
+  room_code?: string;
+  created_at: string;
   is_active: boolean;
+  member_count: number;
+  members: string[];
+  settings?: RoomSettings;
+  active_track?: SpotifyTrack | null;
+  last_state?: PlaybackState | null;
+  host_tokens?: SpotifyTokens;
 }
 
 export interface Member {
@@ -135,6 +142,8 @@ export interface AuthSession {
 export interface CreateRoomRequest {
   name?: string;
   settings?: Partial<RoomSettings>;
+  visibility?: 'public' | 'private';
+  description?: string;
 }
 
 export interface JoinRoomRequest {

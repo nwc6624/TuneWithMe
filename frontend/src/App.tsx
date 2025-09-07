@@ -3,6 +3,8 @@ import { useAuth } from './contexts/AuthContext'
 import LandingPage from './pages/LandingPage'
 import HostDashboard from './pages/HostDashboard'
 import ViewerInterface from './pages/ViewerInterface'
+import PublicRooms from './pages/PublicRooms'
+import JoinRoom from './pages/JoinRoom'
 import Layout from './components/Layout'
 import LoadingSpinner from './components/LoadingSpinner'
 
@@ -60,6 +62,24 @@ function App() {
             <Navigate to="/" replace />
           )
         }
+      />
+      
+      <Route
+        path="/public-rooms"
+        element={
+          user ? (
+            <Layout>
+              <PublicRooms />
+            </Layout>
+          ) : (
+            <Navigate to="/" replace />
+          )
+        }
+      />
+      
+      <Route
+        path="/join/:code"
+        element={<JoinRoom />}
       />
       
       {/* Catch all route */}

@@ -19,9 +19,15 @@ interface PlaybackState {
 interface Room {
   id: string
   host_user_id: string
+  host_name: string
+  name: string
+  description?: string
+  visibility: 'public' | 'private'
+  room_code?: string
   created_at: string
   is_active: boolean
   member_count: number
+  members: string[]
 }
 
 interface RoomContextType {
@@ -29,8 +35,10 @@ interface RoomContextType {
   playbackState: PlaybackState | null
   isConnected: boolean
   joinRoom: (roomId: string, deviceId?: string) => Promise<boolean>
+  joinRoomByCode: (roomCode: string) => Promise<boolean>
+  getPublicRooms: () => Promise<Room[]>
   leaveRoom: () => Promise<void>
-  createRoom: (name?: string) => Promise<string | null>
+  createRoom: (name?: string, visibility?: 'public' | 'private', description?: string) => Promise<string | null>
   startSharing: () => Promise<boolean>
   stopSharing: () => Promise<boolean>
   sendControlMessage: (action: string, data: any) => void
@@ -143,7 +151,7 @@ export function RoomProvider({ children }: RoomProviderProps) {
     }
   }
 
-  const createRoom = async (name?: string): Promise<string | null> => {
+  const createRoom = async (name?: string, visibility?: 'public' | 'private', description?: string): Promise<string | null> => {
     try {
       const response = await fetch('/api/rooms', {
         method: 'POST',
@@ -151,7 +159,7 @@ export function RoomProvider({ children }: RoomProviderProps) {
           'Content-Type': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify({ name })
+        body: JSON.stringify({ name, visibility, description })
       })
 
       if (response.ok) {
@@ -162,9 +170,15 @@ export function RoomProvider({ children }: RoomProviderProps) {
         const newRoom: Room = {
           id: roomId,
           host_user_id: '', // This will be set by the backend
+          host_name: '',
+          name: name || 'My Room',
+          description: description || '',
+          visibility: visibility || 'private',
+          room_code: data.room?.room_code,
           created_at: new Date().toISOString(),
           is_active: false,
-          member_count: 1
+          member_count: 1,
+          members: []
         }
         setCurrentRoom(newRoom)
         
@@ -179,6 +193,55 @@ export function RoomProvider({ children }: RoomProviderProps) {
     } catch (error) {
       console.error('Failed to create room:', error)
       return null
+    }
+  }
+
+  const joinRoomByCode = async (roomCode: string): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/rooms/join', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ room_code: roomCode })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setCurrentRoom(data.room)
+        
+        // Connect to WebSocket
+        connectWebSocket(data.room.id)
+        
+        return true
+      } else {
+        console.error('Failed to join room by code')
+        return false
+      }
+    } catch (error) {
+      console.error('Failed to join room by code:', error)
+      return false
+    }
+  }
+
+  const getPublicRooms = async (): Promise<Room[]> => {
+    try {
+      const response = await fetch('/api/rooms/public', {
+        method: 'GET',
+        credentials: 'include'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.rooms || []
+      } else {
+        console.error('Failed to get public rooms')
+        return []
+      }
+    } catch (error) {
+      console.error('Failed to get public rooms:', error)
+      return []
     }
   }
 
@@ -311,6 +374,8 @@ export function RoomProvider({ children }: RoomProviderProps) {
     playbackState,
     isConnected,
     joinRoom,
+    joinRoomByCode,
+    getPublicRooms,
     leaveRoom,
     createRoom,
     startSharing,
