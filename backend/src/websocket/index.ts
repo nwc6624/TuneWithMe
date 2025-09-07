@@ -129,7 +129,7 @@ class WebSocketManager {
 
   private async handleSyncRequest(connection: WebSocketConnection, message: any) {
     try {
-      const { member_id, current_position_ms, current_track_uri } = message.payload;
+      const { member_id, current_position_ms: _current_position_ms, current_track_uri: _current_track_uri } = message.payload;
       
       // Get current room state
       const playbackState = await redis.getPlaybackState(connection.roomId);

@@ -19,7 +19,7 @@ export interface PlaybackState {
   is_playing: boolean;
   position_ms: number;
   duration_ms: number;
-  context_uri?: string;
+  context_uri?: string | undefined;
   updated_at: number;
 }
 

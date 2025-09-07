@@ -8,7 +8,7 @@ console.log('SPOTIFY_CLIENT_ID:', process.env.SPOTIFY_CLIENT_ID ? '[SET]' : '[NO
 console.log('SPOTIFY_CLIENT_SECRET:', process.env.SPOTIFY_CLIENT_SECRET ? '[SET]' : '[NOT SET]');
 console.log('SPOTIFY_REDIRECT_URI:', process.env.SPOTIFY_REDIRECT_URI ? '[SET]' : '[NOT SET]');
 
-import Fastify from 'fastify';
+import Fastify, { FastifyRequest, FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import websocket from '@fastify/websocket';
 import session from '@fastify/session';
@@ -49,16 +49,9 @@ await fastify.register(session, {
     httpOnly: true,
     sameSite: 'lax', // Use lax for better compatibility
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/',
-    domain: undefined // Let browser handle domain automatically
-  },
-  // Ensure sessions are saved and persisted
-  saveUninitialized: true,
-  resave: true,
-  name: 'sessionId', // Explicitly set cookie name
-  // Additional session options for better persistence
-  rolling: true,
-  unset: 'destroy'
+    path: '/'
+    // Remove domain: undefined to avoid TypeScript error
+  }
 });
 
 await fastify.register(websocket);
@@ -82,14 +75,16 @@ fastify.get('/health', async () => {
 });
 
 // Frontend routes - serve the React app
-fastify.get('/dashboard', async (request: FastifyRequest, reply: FastifyReply) => {
+const frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:3000';
+
+fastify.get('/dashboard', async (_request: FastifyRequest, reply: FastifyReply) => {
   // Redirect to frontend dashboard
-  return reply.redirect('http://127.0.0.1:3000/dashboard');
+  return reply.redirect(`${frontendUrl}/dashboard`);
 });
 
-fastify.get('/viewer', async (request: FastifyRequest, reply: FastifyReply) => {
+fastify.get('/viewer', async (_request: FastifyRequest, reply: FastifyReply) => {
   // Redirect to frontend viewer page
-  return reply.redirect('http://127.0.0.1:3000/viewer');
+  return reply.redirect(`${frontendUrl}/viewer`);
 });
 
 // Catch-all route for any other frontend routes (but not API routes)
@@ -99,7 +94,7 @@ fastify.get('*', async (request: FastifyRequest, reply: FastifyReply) => {
     return reply.status(404).send({ error: 'Not found' });
   }
   // Redirect to frontend
-  return reply.redirect('http://127.0.0.1:3000');
+  return reply.redirect(frontendUrl);
 });
 
 // Graceful shutdown

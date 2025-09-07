@@ -71,7 +71,10 @@ export function RoomProvider({ children }: RoomProviderProps) {
 
   const connectWebSocket = (roomId: string) => {
     try {
-      const ws = new WebSocket(`ws://127.0.0.1:3001/ws/rooms/${roomId}`)
+      const wsUrl = process.env.NODE_ENV === 'production' 
+        ? `wss://${window.location.host}/ws/rooms/${roomId}`
+        : `ws://127.0.0.1:3001/ws/rooms/${roomId}`;
+      const ws = new WebSocket(wsUrl)
       
       ws.onopen = () => {
         setIsConnected(true)

@@ -98,7 +98,7 @@ class SpotifyService {
         is_playing: response.body.is_playing || false,
         position_ms: response.body.progress_ms || 0,
         duration_ms: track.duration_ms,
-        context_uri: response.body.context?.uri,
+        context_uri: response.body.context?.uri || undefined,
         updated_at: Date.now()
       };
     } catch (error) {
@@ -136,7 +136,7 @@ class SpotifyService {
         is_playing: response.body.is_playing || false,
         position_ms: response.body.progress_ms || 0,
         duration_ms: track.duration_ms,
-        context_uri: response.body.context?.uri,
+        context_uri: response.body.context?.uri || undefined,
         updated_at: Date.now()
       };
     } catch (error) {
@@ -169,7 +169,7 @@ class SpotifyService {
         is_playing: response.body.is_playing || false,
         position_ms: response.body.progress_ms || 0,
         duration_ms: track.duration_ms,
-        context_uri: response.body.context?.uri,
+        context_uri: response.body.context?.uri || undefined,
         updated_at: Date.now()
       };
     } catch (error) {
@@ -182,7 +182,7 @@ class SpotifyService {
   async getAvailableDevices(): Promise<SpotifyDevice[]> {
     try {
       const response = await this.client.getMyDevices();
-      return response.body.devices.map(device => ({
+      return response.body.devices.map((device: any) => ({
         id: device.id!,
         name: device.name!,
         type: device.type!,
@@ -198,7 +198,7 @@ class SpotifyService {
 
   async transferPlayback(deviceId: string): Promise<boolean> {
     try {
-      await this.client.transferMyPlayback([deviceId], false);
+      await this.client.transferMyPlayback([deviceId], { play: false });
       return true;
     } catch (error) {
       logger.error('Failed to transfer playback:', error);

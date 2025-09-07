@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRoom } from '../contexts/RoomContext'
 import { useAuth } from '../contexts/AuthContext'
-import { Play, Pause, Square, Copy, ExternalLink, Music, Users, Radio, SkipBack, SkipForward } from 'lucide-react'
+import { Play, Pause, Copy, ExternalLink, Music, Users, Radio, SkipBack, SkipForward } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function HostDashboard() {
@@ -24,6 +24,8 @@ export default function HostDashboard() {
   const [isStopping, setIsStopping] = useState(false)
   const [currentPlayback, setCurrentPlayback] = useState<any>(null)
   const [isLoadingPlayback, setIsLoadingPlayback] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
 
   const handleCreateRoom = async () => {
     if (!roomName.trim()) return
@@ -92,7 +94,10 @@ export default function HostDashboard() {
   const getOverlayUrl = () => {
     if (currentRoom) {
       // Use the backend URL for the overlay, not the frontend
-      return `http://localhost:3001/overlay/${currentRoom.id}`
+      const backendUrl = process.env.NODE_ENV === 'production' 
+        ? `https://${window.location.host}`
+        : 'http://localhost:3001';
+      return `${backendUrl}/overlay/${currentRoom.id}`
     }
     return ''
   }
@@ -116,6 +121,31 @@ export default function HostDashboard() {
     if (!currentPlayback || !currentPlayback.duration_ms) return 0
     return (currentPlayback.position_ms / currentPlayback.duration_ms) * 100
   }
+
+  // Smooth progress bar updates
+  const [smoothProgress, setSmoothProgress] = useState(0)
+  
+  useEffect(() => {
+    if (currentPlayback?.is_playing && currentPlayback.duration_ms > 0) {
+      const targetProgress = getProgressPercent()
+      setSmoothProgress(targetProgress)
+      
+      // Update progress smoothly while playing
+      const interval = setInterval(() => {
+        setSmoothProgress(() => {
+          const currentTime = Date.now()
+          const elapsed = (currentTime - lastUpdateTime) / 1000 // seconds since last update
+          const newPosition = currentPlayback.position_ms + (elapsed * 1000) // approximate new position
+          const newProgress = (newPosition / currentPlayback.duration_ms) * 100
+          return Math.min(newProgress, 100)
+        })
+      }, 100) // Update every 100ms for smooth animation
+      
+      return () => clearInterval(interval)
+    } else {
+      setSmoothProgress(getProgressPercent())
+    }
+  }, [currentPlayback?.position_ms, currentPlayback?.is_playing, currentPlayback?.duration_ms, lastUpdateTime])
 
   // Audio Control Handlers
   const handlePreviousTrack = async () => {
@@ -164,8 +194,12 @@ export default function HostDashboard() {
     }
   }
 
-  const fetchCurrentPlayback = async () => {
-    setIsLoadingPlayback(true)
+  const fetchCurrentPlayback = async (isBackgroundUpdate = false) => {
+    // Don't show loading spinner for background updates to prevent flickering
+    if (!isBackgroundUpdate) {
+      setIsLoadingPlayback(true)
+    }
+    
     try {
       const response = await fetch('/auth/spotify/currently-playing', {
         credentials: 'include'
@@ -174,25 +208,57 @@ export default function HostDashboard() {
       if (response.ok) {
         const data = await response.json()
         console.log('Current playback data:', data)
-        setCurrentPlayback(data)
+        
+        // Only update if we have new data or it's the initial load
+        if (data && data.track && (!currentPlayback || data.track.uri !== currentPlayback.track?.uri || isInitialLoad)) {
+          setCurrentPlayback(data)
+          setLastUpdateTime(Date.now())
+          setIsInitialLoad(false)
+        } else if (data && currentPlayback) {
+          // Update position and playing status without changing the track
+          setCurrentPlayback((prev: any) => ({
+            ...prev,
+            is_playing: data.is_playing,
+            position_ms: data.position_ms,
+            duration_ms: data.duration_ms
+          }))
+        }
       } else {
         console.error('Failed to fetch current playback')
-        setCurrentPlayback(null)
+        if (!isBackgroundUpdate) {
+          setCurrentPlayback(null)
+        }
       }
     } catch (error) {
       console.error('Error fetching current playback:', error)
-      setCurrentPlayback(null)
+      if (!isBackgroundUpdate) {
+        setCurrentPlayback(null)
+      }
     } finally {
-      setIsLoadingPlayback(false)
+      if (!isBackgroundUpdate) {
+        setIsLoadingPlayback(false)
+      }
     }
   }
 
-  // Fetch current playback every 5 seconds
+  // Fetch current playback with smart polling
   useEffect(() => {
     fetchCurrentPlayback()
-    const interval = setInterval(fetchCurrentPlayback, 5000)
+    
+    // Use different intervals based on playback state
+    const getPollingInterval = () => {
+      if (currentPlayback?.is_playing) {
+        return 2000 // Poll every 2 seconds when playing
+      }
+      return 5000 // Poll every 5 seconds when paused
+    }
+    
+    const interval = setInterval(() => {
+      fetchCurrentPlayback(true) // Background update
+    }, getPollingInterval())
+    
     return () => clearInterval(interval)
-  }, [])
+  }, [currentPlayback?.is_playing])
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -207,27 +273,41 @@ export default function HostDashboard() {
       {/* Current Spotify Playback */}
       <div className="card mb-6">
         <div className="card-header">
-          <h2 className="card-title text-gray-900">Current Spotify Playback</h2>
-          <p className="card-description text-gray-600">
-            Your current music status from Spotify
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="card-title text-gray-900">Current Spotify Playback</h2>
+              <p className="card-description text-gray-600">
+                Your current music status from Spotify
+              </p>
+            </div>
+            {isLoadingPlayback && (
+              <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span>Updating...</span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="card-content">
-          {isLoadingPlayback ? (
-            <div className="flex items-center justify-center py-8">
-              <LoadingSpinner size="lg" />
-              <span className="ml-2 text-gray-600">Loading playback...</span>
-            </div>
-          ) : currentPlayback && currentPlayback.track ? (
+          {currentPlayback && currentPlayback.track ? (
             <div className="space-y-4">
               {/* Track Info */}
               <div className="flex items-center space-x-4">
                 {currentPlayback.track.album_art_url && (
-                  <img 
-                    src={currentPlayback.track.album_art_url} 
-                    alt="Album Art"
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-200">
+                    <img 
+                      src={currentPlayback.track.album_art_url} 
+                      alt="Album Art"
+                      className="w-full h-full object-cover transition-opacity duration-200"
+                      onLoad={(e) => {
+                        e.currentTarget.style.opacity = '1'
+                      }}
+                      onError={(e) => {
+                        e.currentTarget.style.opacity = '0'
+                      }}
+                      style={{ opacity: 0 }}
+                    />
+                  </div>
                 )}
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">
@@ -255,8 +335,8 @@ export default function HostDashboard() {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(currentPlayback.position_ms / currentPlayback.duration_ms) * 100}%` }}
+                      className="bg-blue-500 h-2 rounded-full transition-all duration-100 ease-linear"
+                      style={{ width: `${smoothProgress}%` }}
                     />
                   </div>
                 </div>
@@ -529,10 +609,20 @@ export default function HostDashboard() {
           {/* Current Track */}
           <div className="card">
             <div className="card-header">
-              <h2 className="card-title text-gray-900">Now Playing</h2>
-              <p className="card-description text-gray-600">
-                Current track information and playback status
-              </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="card-title text-gray-900">Now Playing</h2>
+                  <p className="card-description text-gray-600">
+                    Current track information and playback status
+                  </p>
+                </div>
+                {isLoadingPlayback && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span>Syncing...</span>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="card-content">
               {currentPlayback && currentPlayback.track ? (
@@ -558,11 +648,20 @@ export default function HostDashboard() {
                   <div className="text-center">
                     {/* Album Art */}
                     <div className="flex justify-center mb-4">
-                      <img
-                        src={currentPlayback.track.album_art_url}
-                        alt="Album Art"
-                        className="w-32 h-32 rounded-lg object-cover shadow-lg"
-                      />
+                      <div className="relative w-32 h-32 rounded-lg overflow-hidden shadow-lg bg-gray-200">
+                        <img
+                          src={currentPlayback.track.album_art_url}
+                          alt="Album Art"
+                          className="w-full h-full object-cover transition-opacity duration-200"
+                          onLoad={(e) => {
+                            e.currentTarget.style.opacity = '1'
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.style.opacity = '0'
+                          }}
+                          style={{ opacity: 0 }}
+                        />
+                      </div>
                     </div>
 
                     {/* Track Info */}
@@ -580,8 +679,8 @@ export default function HostDashboard() {
                     <div className="space-y-2 mb-4">
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${getProgressPercent()}%` }}
+                          className="bg-blue-500 h-2 rounded-full transition-all duration-100 ease-linear"
+                          style={{ width: `${smoothProgress}%` }}
                         />
                       </div>
                       <div className="flex justify-between text-sm text-gray-600">
@@ -616,9 +715,9 @@ export default function HostDashboard() {
                           <button
                             onClick={handlePlayPause}
                             className="p-3 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
-                            title={playbackState.is_playing ? 'Pause' : 'Play'}
+                            title={playbackState?.is_playing ? 'Pause' : 'Play'}
                           >
-                            {playbackState.is_playing ? (
+                            {playbackState?.is_playing ? (
                               <Pause className="w-5 h-5 text-blue-700" />
                             ) : (
                               <Play className="w-5 h-5 text-blue-700" />

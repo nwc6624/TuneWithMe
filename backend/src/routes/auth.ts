@@ -53,7 +53,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.redirect(authUrl);
     } catch (error) {
       logger.error('Failed to start OAuth flow:', error);
-      logger.error('Error details:', { message: error.message, stack: error.stack });
+      logger.error('Error details:', { message: (error as Error).message, stack: (error as Error).stack });
       return reply.status(400).send({ error: 'Invalid request parameters' });
     }
   });
@@ -83,6 +83,11 @@ export async function authRoutes(fastify: FastifyInstance) {
       }
       
       // Verify state parameter from Redis
+      if (!state) {
+        logger.error('No state parameter received');
+        return reply.status(400).send({ error: 'Missing state parameter' });
+      }
+      
       const oauthState = await redis.getOAuthState(state);
       if (!oauthState) {
         logger.warn('OAuth state not found in Redis, possible CSRF attack or expired state');
@@ -223,7 +228,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       // If user is a host and in a room, update the room's playback state
       if (tokens.role === 'host') {
         try {
-          const userRoom = await redis.client.get(`user_room:${session.user_id}`);
+          const userRoom = await redis.getClient().get(`user_room:${session.user_id}`);
           if (userRoom) {
             await redis.updatePlaybackState(userRoom, playback);
             logger.info(`Updated playback state for room ${userRoom}`);

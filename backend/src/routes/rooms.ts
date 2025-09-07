@@ -15,10 +15,10 @@ const joinRoomSchema = z.object({
   device_id: z.string().optional()
 })
 
-// Schema for room state
-const roomStateSchema = z.object({
-  room_id: z.string()
-})
+// Schema for room state (currently unused but kept for future use)
+// const roomStateSchema = z.object({
+//   room_id: z.string()
+// })
 
 export default async function roomRoutes(fastify: FastifyInstance) {
   // Create a new room
@@ -44,10 +44,10 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       }
 
       // Store room in Redis
-      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room)) // 1 hour TTL
+      await redis.getClient().setEx(`room:${roomId}`, 3600, JSON.stringify(room)) // 1 hour TTL
       
       // Store user's current room
-      await redis.client.setEx(`user_room:${session.user_id}`, 3600, roomId)
+      await redis.getClient().setEx(`user_room:${session.user_id}`, 3600, roomId)
 
       logger.info(`Room created: ${roomId} by user: ${session.user_id}`)
       
@@ -70,10 +70,10 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       }
 
       const { roomId } = request.params as { roomId: string }
-      const { device_id } = joinRoomSchema.parse(request.body)
+      const { device_id: _device_id } = joinRoomSchema.parse(request.body)
 
       // Get room from Redis
-      const roomData = await redis.client.get(`room:${roomId}`)
+      const roomData = await redis.getClient().get(`room:${roomId}`)
       if (!roomData) {
         return reply.status(404).send({ error: 'Room not found' })
       }
@@ -90,10 +90,10 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       room.member_count = room.members.length
 
       // Update room in Redis
-      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+      await redis.getClient().setEx(`room:${roomId}`, 3600, JSON.stringify(room))
       
       // Store user's current room
-      await redis.client.setEx(`user_room:${session.user_id}`, 3600, roomId)
+      await redis.getClient().setEx(`user_room:${session.user_id}`, 3600, roomId)
 
       logger.info(`User ${session.user_id} joined room: ${roomId}`)
       
@@ -118,7 +118,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       const { roomId } = request.params as { roomId: string }
 
       // Get room from Redis
-      const roomData = await redis.client.get(`room:${roomId}`)
+      const roomData = await redis.getClient().get(`room:${roomId}`)
       if (!roomData) {
         return reply.status(404).send({ error: 'Room not found' })
       }
@@ -169,7 +169,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       const { roomId } = request.params as { roomId: string }
 
       // Get room from Redis
-      const roomData = await redis.client.get(`room:${roomId}`)
+      const roomData = await redis.getClient().get(`room:${roomId}`)
       if (!roomData) {
         return reply.status(404).send({ error: 'Room not found' })
       }
@@ -183,7 +183,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
 
       // Activate room
       room.is_active = true
-      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+      await redis.getClient().setEx(`room:${roomId}`, 3600, JSON.stringify(room))
 
       logger.info(`Room ${roomId} started sharing by user: ${session.user_id}`)
       
@@ -205,7 +205,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       const { roomId } = request.params as { roomId: string }
 
       // Get room from Redis
-      const roomData = await redis.client.get(`room:${roomId}`)
+      const roomData = await redis.getClient().get(`room:${roomId}`)
       if (!roomData) {
         return reply.status(404).send({ error: 'Room not found' })
       }
@@ -219,7 +219,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
 
       // Deactivate room
       room.is_active = false
-      await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+      await redis.getClient().setEx(`room:${roomId}`, 3600, JSON.stringify(room))
 
       logger.info(`Room ${roomId} stopped sharing by user: ${session.user_id}`)
       
@@ -241,7 +241,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       const { roomId } = request.params as { roomId: string }
 
       // Get room from Redis
-      const roomData = await redis.client.get(`room:${roomId}`)
+      const roomData = await redis.getClient().get(`room:${roomId}`)
       if (!roomData) {
         return reply.status(404).send({ error: 'Room not found' })
       }
@@ -254,7 +254,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
 
       // If no members left, delete the room
       if (room.members.length === 0) {
-        await redis.client.del(`room:${roomId}`)
+        await redis.getClient().del(`room:${roomId}`)
         logger.info(`Room ${roomId} deleted (no members left)`)
       } else {
         // If host left, assign new host
@@ -264,12 +264,12 @@ export default async function roomRoutes(fastify: FastifyInstance) {
         }
         
         // Update room in Redis
-        await redis.client.setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+        await redis.getClient().setEx(`room:${roomId}`, 3600, JSON.stringify(room))
         logger.info(`User ${session.user_id} left room: ${roomId}`)
       }
 
       // Remove user's room association
-      await redis.client.del(`user_room:${session.user_id}`)
+      await redis.getClient().del(`user_room:${session.user_id}`)
       
       return reply.send({ success: true })
     } catch (error) {

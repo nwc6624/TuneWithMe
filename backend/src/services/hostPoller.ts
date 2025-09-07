@@ -2,7 +2,7 @@ import { redis } from './redis.js';
 import { getSpotifyService } from './spotify.js';
 import { wsManager } from '../websocket/index.js';
 import { logger } from '../utils/logger.js';
-import { PlaybackState, Room } from '../types/index.js';
+import { PlaybackState } from '../types/index.js';
 
 interface ActiveRoom {
   roomId: string;
@@ -93,7 +93,7 @@ class HostPollerService {
       const activeRoomIds = await this.getActiveRoomIds();
       
       // Remove rooms that are no longer active
-      for (const [roomId, activeRoom] of this.activeRooms.entries()) {
+      for (const [roomId, _activeRoom] of this.activeRooms.entries()) {
         if (!activeRoomIds.includes(roomId)) {
           await this.removeRoom(roomId);
         }

@@ -94,7 +94,7 @@ export async function overlayRoutes(fastify: FastifyInstance) {
   });
 }
 
-function generateOverlayHTML(roomId: string, room: any, playbackState: any): string {
+function generateOverlayHTML(roomId: string, _room: any, playbackState: any): string {
   const track = playbackState?.track;
   const isPlaying = playbackState?.is_playing || false;
   const position = playbackState?.position_ms || 0;

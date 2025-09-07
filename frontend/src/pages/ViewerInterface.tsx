@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRoom } from '../contexts/RoomContext'
 import { useAuth } from '../contexts/AuthContext'
-import { Headphones, Users, Copy, Music, Play, Pause, Radio, Wifi, WifiOff } from 'lucide-react'
+import { Headphones, Users, Music, Radio, Wifi, WifiOff } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 interface SpotifyDevice {
@@ -14,7 +14,7 @@ interface SpotifyDevice {
 }
 
 export default function ViewerInterface() {
-  const { user } = useAuth()
+  const { user: _user } = useAuth()
   const { 
     currentRoom, 
     playbackState, 

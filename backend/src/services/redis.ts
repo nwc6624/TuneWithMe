@@ -7,10 +7,15 @@ class RedisService {
   private publisher: RedisClientType;
 
   constructor() {
-    this.client = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
-      password: process.env.REDIS_PASSWORD || undefined,
-    });
+    const redisConfig: any = {
+      url: process.env.REDIS_URL || 'redis://localhost:6379'
+    };
+    
+    if (process.env.REDIS_PASSWORD) {
+      redisConfig.password = process.env.REDIS_PASSWORD;
+    }
+    
+    this.client = createClient(redisConfig);
 
     this.subscriber = this.client.duplicate();
     this.publisher = this.client.duplicate();
@@ -189,6 +194,11 @@ class RedisService {
 
   async flushAll(): Promise<void> {
     await this.client.flushAll();
+  }
+
+  // Public access to client for direct operations
+  getClient() {
+    return this.client;
   }
 }
 
