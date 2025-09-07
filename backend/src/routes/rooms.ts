@@ -80,11 +80,23 @@ export default async function roomRoutes(fastify: FastifyInstance) {
         ? Math.random().toString(36).substr(2, 6).toUpperCase()
         : undefined
       
+      // Generate random room name if none provided
+      const generateRandomRoomName = () => {
+        const adjectives = ['Epic', 'Amazing', 'Chill', 'Vibey', 'Cool', 'Awesome', 'Fire', 'Sick', 'Rad', 'Dope', 'Fresh', 'Smooth', 'Wild', 'Crazy', 'Sweet', 'Nice']
+        const nouns = ['Vibes', 'Beats', 'Tunes', 'Jams', 'Sounds', 'Music', 'Session', 'Party', 'Groove', 'Flow', 'Wave', 'Mix', 'Playlist', 'Set', 'Show', 'Night']
+        
+        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)]
+        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)]
+        const randomNumber = Math.floor(Math.random() * 999) + 1
+        
+        return `${randomAdjective} ${randomNoun} ${randomNumber}`
+      }
+      
       const room = {
         id: roomId,
         host_user_id: session.user_id,
         host_name: session.display_name || 'Unknown',
-        name: name || 'My Room',
+        name: name || generateRandomRoomName(),
         description: description || '',
         visibility: visibility,
         room_code: roomCode,

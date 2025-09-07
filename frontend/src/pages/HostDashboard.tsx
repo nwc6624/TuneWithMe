@@ -34,13 +34,24 @@ export default function HostDashboard() {
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0)
   const [showQRModal, setShowQRModal] = useState(false)
 
-  const handleCreateRoom = async () => {
-    if (!roomName.trim()) return
+  const generateRandomRoomName = () => {
+    const adjectives = ['Epic', 'Amazing', 'Chill', 'Vibey', 'Cool', 'Awesome', 'Fire', 'Sick', 'Rad', 'Dope', 'Fresh', 'Smooth', 'Wild', 'Crazy', 'Sweet', 'Nice']
+    const nouns = ['Vibes', 'Beats', 'Tunes', 'Jams', 'Sounds', 'Music', 'Session', 'Party', 'Groove', 'Flow', 'Wave', 'Mix', 'Playlist', 'Set', 'Show', 'Night']
     
+    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)]
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)]
+    const randomNumber = Math.floor(Math.random() * 999) + 1
+    
+    return `${randomAdjective} ${randomNoun} ${randomNumber}`
+  }
+
+  const handleCreateRoom = async () => {
     setIsCreating(true)
     try {
+      const finalRoomName = roomName.trim() || generateRandomRoomName()
+      
       const roomId = await createRoom(
-        roomName.trim(), 
+        finalRoomName, 
         roomVisibility, 
         roomDescription.trim() || undefined
       )
@@ -406,14 +417,14 @@ export default function HostDashboard() {
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="roomName" className="block text-sm font-medium text-gray-700 mb-2">
-                      Room Name (Optional)
+                      Room Name
                     </label>
                     <input
                       id="roomName"
                       type="text"
                       value={roomName}
                       onChange={(e) => setRoomName(e.target.value)}
-                      placeholder="My Awesome Playlist"
+                      placeholder="Enter a room name or leave blank for a random one"
                       className="input"
                       disabled={isCreating}
                     />
@@ -471,7 +482,7 @@ export default function HostDashboard() {
 
                   <button
                     onClick={handleCreateRoom}
-                    disabled={isCreating || !roomName.trim()}
+                    disabled={isCreating}
                     className="btn-primary w-full"
                   >
                     {isCreating ? (
