@@ -19,6 +19,7 @@ A real-time Spotify synchronization platform that lets streamers share their cur
 - **Frontend**: React + TypeScript + Vite + Tailwind CSS
 - **Real-time**: WebSocket + Redis pub/sub
 - **Database**: Redis for ephemeral state, PostgreSQL optional for persistence
+- 
 - **Authentication**: Spotify OAuth 2.0 with PKCE
 
 ## 🚀 Quick Start
