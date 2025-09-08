@@ -11,9 +11,9 @@
   --surface-primary: #ffffff;
   --surface-secondary: #f1f5f9;
   --surface-tertiary: #e2e8f0;
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-tertiary: #475569;
+  --text-primary: #000000;
+  --text-secondary: #1e293b;
+  --text-tertiary: #334155;
   --border-primary: #e2e8f0;
   --border-secondary: #cbd5e1;
   --ring-color: #0ea5e9;
@@ -29,9 +29,9 @@
   --surface-primary: #1e293b;
   --surface-secondary: #1e293b;
   --surface-tertiary: #475569;
-  --text-primary: #f8fafc;
-  --text-secondary: #e2e8f0;
-  --text-tertiary: #cbd5e1;
+  --text-primary: #ffffff;
+  --text-secondary: #f1f5f9;
+  --text-tertiary: #e2e8f0;
   --border-primary: #475569;
   --border-secondary: #64748b;
   --ring-color: #38bdf8;
@@ -194,6 +194,17 @@ body {
   .text-low-contrast {
     color: var(--text-tertiary);
     font-weight: 400;
+  }
+
+  /* Extra high contrast for landing page sections */
+  .text-extra-high-contrast {
+    color: #000000;
+    font-weight: 700;
+  }
+
+  .dark .text-extra-high-contrast {
+    color: #ffffff;
+    font-weight: 700;
   }
 
   /* Enhanced surface contrast */
