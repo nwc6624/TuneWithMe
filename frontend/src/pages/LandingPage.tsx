@@ -91,14 +91,14 @@ export default function LandingPage() {
       {/* How it works section */}
       <div className="py-20 bg-background-secondary">
         <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center text-white mb-16">
+          <h2 className="text-4xl font-bold text-center text-high-contrast mb-16">
             How It Works
           </h2>
           
           <div className="grid md:grid-cols-2 gap-16 items-center">
             {/* Host side */}
             <div>
-              <h3 className="text-2xl font-semibold text-white mb-6 flex items-center">
+              <h3 className="text-2xl font-semibold text-high-contrast mb-6 flex items-center">
                 <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
                   1
                 </div>
@@ -108,25 +108,25 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Connect your Spotify Premium account
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Create a room and start sharing
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Listen normally - we'll sync everyone else
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Get OBS overlay URL for your stream
                   </p>
                 </div>
@@ -135,7 +135,7 @@ export default function LandingPage() {
 
             {/* Viewer side */}
             <div>
-              <h3 className="text-2xl font-semibold text-white mb-6 flex items-center">
+              <h3 className="text-2xl font-semibold text-high-contrast mb-6 flex items-center">
                 <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
                   2
                 </div>
@@ -145,25 +145,25 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Connect your Spotify Premium account
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Join a room with the room ID
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Choose your preferred device
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-secondary">
+                  <p className="text-medium-contrast">
                     Enjoy perfectly synced music
                   </p>
                 </div>
@@ -176,10 +176,10 @@ export default function LandingPage() {
       {/* Footer */}
       <div className="py-12 bg-background-primary border-t border-surface-tertiary/20">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-primary/60">
+          <p className="text-medium-contrast">
             © 2024 TuneWithMe. Built with ❤️ for music lovers and streamers.
           </p>
-          <p className="text-sm text-primary/40 mt-2">
+          <p className="text-sm text-low-contrast mt-2">
             Requires Spotify Premium accounts for all participants.
           </p>
         </div>
