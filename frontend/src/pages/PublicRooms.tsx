@@ -91,12 +91,12 @@ export default function PublicRooms() {
   // Allow anonymous users to view public rooms
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-primary">
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Public Rooms</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-high-contrast mb-2">Public Rooms</h1>
+          <p className="text-medium-contrast font-medium">
             Discover and join public listening sessions from other users
           </p>
         </div>
@@ -106,7 +106,7 @@ export default function PublicRooms() {
           <button
             onClick={loadPublicRooms}
             disabled={isLoading}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="btn btn-outline"
           >
             {isLoading ? (
               <>
@@ -124,7 +124,7 @@ export default function PublicRooms() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md dark:bg-red-900/20 dark:border-red-800">
             <div className="flex">
               <div className="flex-shrink-0">
                 <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -132,7 +132,7 @@ export default function PublicRooms() {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-800">{error}</p>
+                <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
               </div>
             </div>
           </div>
@@ -145,42 +145,42 @@ export default function PublicRooms() {
           </div>
         ) : publicRooms.length === 0 ? (
           <div className="text-center py-12">
-            <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No public rooms available</h3>
-            <p className="text-gray-600">
+            <Music className="w-16 h-16 text-tertiary mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-high-contrast mb-2">No public rooms available</h3>
+            <p className="text-medium-contrast font-medium">
               There are currently no active public rooms. Check back later or create your own!
             </p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {publicRooms.map((room) => (
-              <div key={room.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
+              <div key={room.id} className="card p-6 hover:shadow-lg transition-all duration-200">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1 bg-white px-2 py-1 rounded">
+                    <h3 className="text-lg font-bold text-high-contrast mb-1 surface-secondary px-2 py-1 rounded">
                       {room.name}
                     </h3>
-                    <p className="text-sm text-gray-600 mb-2 bg-gray-50 px-2 py-1 rounded">
+                    <p className="text-sm text-medium-contrast font-medium mb-2 surface-secondary px-2 py-1 rounded">
                       Host: {room.host_name}
                     </p>
                     {room.description && (
-                      <p className="text-sm text-gray-700 mb-3 bg-gray-50 px-2 py-1 rounded">
+                      <p className="text-sm text-medium-contrast font-medium mb-3 surface-secondary px-2 py-1 rounded">
                         {room.description}
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center text-xs text-gray-500 bg-blue-50 px-2 py-1 rounded">
+                  <div className="flex items-center text-xs text-primary-600 bg-primary-50 dark:bg-primary-900/20 dark:text-primary-400 px-2 py-1 rounded">
                     <Globe className="w-3 h-3 mr-1" />
                     Public
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                  <div className="flex items-center text-sm text-secondary surface-secondary px-2 py-1 rounded">
                     <Users className="w-4 h-4 mr-1" />
                     {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
                   </div>
-                  <div className="flex items-center text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
+                  <div className="flex items-center text-sm text-secondary surface-secondary px-2 py-1 rounded">
                     <Clock className="w-4 h-4 mr-1" />
                     {formatTimeAgo(room.created_at)}
                   </div>
@@ -189,7 +189,7 @@ export default function PublicRooms() {
                 <button
                   onClick={() => handleJoinRoom(room.id)}
                   disabled={isJoining === room.id}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="btn btn-primary w-full"
                 >
                   {isJoining === room.id ? (
                     <>

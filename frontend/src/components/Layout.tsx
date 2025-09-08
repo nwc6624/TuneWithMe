@@ -11,43 +11,27 @@ export default function Layout({ children }: LayoutProps) {
   const { toggleTheme, isDark } = useTheme()
 
   return (
-    <div className={`min-h-screen transition-colors duration-200 ${
-      isDark ? 'bg-slate-900' : 'bg-gray-50'
-    }`}>
+    <div className="min-h-screen bg-primary transition-colors duration-300">
       {/* Navigation */}
-      <nav className={`border-b shadow-sm transition-colors duration-200 ${
-        isDark 
-          ? 'bg-slate-800 border-slate-700' 
-          : 'bg-white border-gray-200'
-      }`}>
+      <nav className="border-b border-primary shadow-sm surface-primary transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-sm">T</span>
               </div>
-              <span className={`text-xl font-bold transition-colors duration-200 ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>
-                TuneWith<span className="text-blue-600">Me</span>
+              <span className="text-xl font-bold text-primary transition-colors duration-300">
+                TuneWith<span className="text-primary-600">Me</span>
               </span>
             </div>
 
             {/* Navigation Links */}
             <div className="hidden md:flex items-center space-x-8">
-              <a href="/dashboard" className={`transition-colors font-medium ${
-                isDark 
-                  ? 'text-slate-300 hover:text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}>
+              <a href="/dashboard" className="text-medium-contrast hover-text-contrast transition-colors duration-200">
                 Dashboard
               </a>
-              <a href="/viewer" className={`transition-colors font-medium ${
-                isDark 
-                  ? 'text-slate-300 hover:text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}>
+              <a href="/viewer" className="text-medium-contrast hover-text-contrast transition-colors duration-200">
                 Viewer
               </a>
             </div>
@@ -55,30 +39,18 @@ export default function Layout({ children }: LayoutProps) {
             {/* User Menu */}
             <div className="flex items-center space-x-4">
               {user ? (
-                <div className={`hidden md:flex items-center space-x-2 text-sm transition-colors duration-200 ${
-                  isDark ? 'text-slate-300' : 'text-gray-600'
-                }`}>
+                <div className="hidden md:flex items-center space-x-2 text-sm text-medium-contrast">
                   <User className="w-4 h-4" />
-                  <span className="font-medium">{user.display_name}</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    isDark 
-                      ? 'bg-blue-900 text-blue-300' 
-                      : 'bg-blue-100 text-blue-700'
-                  }`}>
+                  <span className="font-semibold text-high-contrast">{user.display_name}</span>
+                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-300">
                     {user.role}
                   </span>
                 </div>
               ) : (
-                <div className={`hidden md:flex items-center space-x-2 text-sm transition-colors duration-200 ${
-                  isDark ? 'text-slate-300' : 'text-gray-600'
-                }`}>
+                <div className="hidden md:flex items-center space-x-2 text-sm text-medium-contrast">
                   <User className="w-4 h-4" />
-                  <span className="font-medium">Anonymous User</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    isDark 
-                      ? 'bg-gray-700 text-gray-300' 
-                      : 'bg-gray-100 text-gray-700'
-                  }`}>
+                  <span className="font-medium text-primary">Anonymous User</span>
+                  <span className="px-2 py-1 rounded-full text-xs font-medium surface-tertiary text-tertiary">
                     Viewer
                   </span>
                 </div>
@@ -87,11 +59,7 @@ export default function Layout({ children }: LayoutProps) {
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}
-                className={`p-2 rounded-lg transition-colors duration-200 ${
-                  isDark 
-                    ? 'text-slate-300 hover:text-white hover:bg-slate-700' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
+                className="p-2 rounded-lg text-secondary hover:text-primary hover:surface-secondary transition-all duration-200"
                 title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
               >
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -100,11 +68,7 @@ export default function Layout({ children }: LayoutProps) {
               {user && (
                 <button
                   onClick={logout}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    isDark 
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-700' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  className="p-2 rounded-lg text-secondary hover:text-primary hover:surface-secondary transition-all duration-200"
                   title="Logout"
                 >
                   <LogOut className="w-5 h-5" />

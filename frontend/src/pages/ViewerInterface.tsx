@@ -238,8 +238,8 @@ export default function ViewerInterface() {
     <div className="max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Viewer Interface</h1>
-        <p className="text-surface-primary/70">
+        <h1 className="text-3xl font-bold text-high-contrast mb-2">Viewer Interface</h1>
+        <p className="text-medium-contrast font-medium">
           Join a room and sync your Spotify playback with the host
         </p>
       </div>
@@ -259,7 +259,7 @@ export default function ViewerInterface() {
               <div className="card-content">
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="roomId" className="block text-sm font-medium text-surface-primary mb-2">
+                    <label htmlFor="roomId" className="block text-sm font-semibold text-high-contrast mb-2">
                       Room ID
                     </label>
                     <input
@@ -275,7 +275,7 @@ export default function ViewerInterface() {
                   
                   {/* Playback Mode Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-surface-primary mb-2">
+                    <label className="block text-sm font-semibold text-high-contrast mb-2">
                       Playback Mode
                     </label>
                     <div className="grid grid-cols-3 gap-2">
@@ -285,7 +285,7 @@ export default function ViewerInterface() {
                         className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
                           playbackMode === 'device'
                             ? 'border-primary-500 bg-primary-500/10 text-primary-400'
-                            : 'border-surface-tertiary hover:border-primary-400/50 text-surface-primary'
+                            : 'border-surface-tertiary hover:border-primary-400/50 text-primary'
                         }`}
                       >
                         <div className="text-center">
@@ -299,7 +299,7 @@ export default function ViewerInterface() {
                         className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
                           playbackMode === 'browser'
                             ? 'border-primary-500 bg-primary-500/10 text-primary-400'
-                            : 'border-surface-tertiary hover:border-primary-400/50 text-surface-primary'
+                            : 'border-surface-tertiary hover:border-primary-400/50 text-primary'
                         }`}
                       >
                         <div className="text-center">
@@ -313,7 +313,7 @@ export default function ViewerInterface() {
                         className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
                           playbackMode === 'commands'
                             ? 'border-primary-500 bg-primary-500/10 text-primary-400'
-                            : 'border-surface-tertiary hover:border-primary-400/50 text-surface-primary'
+                            : 'border-surface-tertiary hover:border-primary-400/50 text-primary'
                         }`}
                       >
                         <div className="text-center">
@@ -327,45 +327,46 @@ export default function ViewerInterface() {
                   {/* Device Selection - Only show for device mode */}
                   {playbackMode === 'device' && (
                     <div>
-                      <label className="block text-sm font-medium text-surface-primary mb-2">
+                      <label className="block text-sm font-semibold text-high-contrast mb-2">
                         Select Device
                       </label>
-                    {isLoadingDevices ? (
-                      <div className="flex items-center justify-center p-4">
-                        <LoadingSpinner size="sm" />
-                        <span className="ml-2 text-sm text-surface-primary/70">Loading devices...</span>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {devices.map((device) => (
-                          <div
-                            key={device.id}
-                            className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
-                              selectedDeviceId === device.id
-                                ? 'border-primary-500 bg-primary-500/10'
-                                : 'border-surface-tertiary hover:border-primary-400/50'
-                            }`}
-                            onClick={() => setSelectedDeviceId(device.id)}
-                          >
-                            <span className="text-2xl mr-3">{getDeviceIcon(device.type)}</span>
-                            <div className="flex-1">
-                              <p className="font-medium text-surface-primary">{device.name}</p>
-                              <p className="text-sm text-surface-primary/70 capitalize">{device.type}</p>
+                      {isLoadingDevices ? (
+                        <div className="flex items-center justify-center p-4">
+                          <LoadingSpinner size="sm" />
+                          <span className="ml-2 text-sm text-secondary">Loading devices...</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                          {devices.map((device) => (
+                            <div
+                              key={device.id}
+                              className={`flex items-center p-3 rounded-lg border cursor-pointer transition-colors ${
+                                selectedDeviceId === device.id
+                                  ? 'border-primary-500 bg-primary-500/10'
+                                  : 'border-surface-tertiary hover:border-primary-400/50'
+                              }`}
+                              onClick={() => setSelectedDeviceId(device.id)}
+                            >
+                              <span className="text-2xl mr-3">{getDeviceIcon(device.type)}</span>
+                              <div className="flex-1">
+                                <p className="font-medium text-primary">{device.name}</p>
+                                <p className="text-sm text-secondary capitalize">{device.type}</p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                {device.is_active && (
+                                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                                )}
+                                {device.is_private_session && (
+                                  <span className="text-xs text-yellow-600 bg-yellow-500/20 px-2 py-1 rounded">
+                                    Private
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex items-center space-x-2">
-                              {device.is_active && (
-                                <div className="w-2 h-2 bg-green-500 rounded-full" />
-                              )}
-                              {device.is_private_session && (
-                                <span className="text-xs text-yellow-600 bg-yellow-500/20 px-2 py-1 rounded">
-                                  Private
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* Browser Mode Info */}
@@ -375,7 +376,7 @@ export default function ViewerInterface() {
                         <div className="text-blue-400 text-xl">🌐</div>
                         <div className="flex-1">
                           <h4 className="font-medium text-blue-400 mb-1">Browser Playback</h4>
-                          <p className="text-sm text-surface-primary/70 mb-3">
+                          <p className="text-sm text-secondary mb-3">
                             Since Spotify doesn't allow direct streaming to guests, you can play the same song on YouTube or other platforms.
                           </p>
                           {playbackState?.track && (
@@ -418,7 +419,7 @@ export default function ViewerInterface() {
                         <div className="text-green-400 text-xl">📋</div>
                         <div>
                           <h4 className="font-medium text-green-400 mb-1">Copy Commands</h4>
-                          <p className="text-sm text-surface-primary/70">
+                          <p className="text-sm text-secondary">
                             Copy Spotify commands to manually play the same track in your Spotify app.
                             Commands will be generated when you join a room with active playback.
                           </p>
@@ -429,7 +430,7 @@ export default function ViewerInterface() {
 
                   <button
                     onClick={handleJoinRoom}
-                    disabled={isJoining || !roomId.trim() || (playbackMode === 'device' && !selectedDeviceId)}
+                    disabled={isJoining || !roomId.trim() || (playbackMode === 'device' && _user && !selectedDeviceId)}
                     className="btn-primary w-full"
                   >
                     {isJoining ? (
@@ -498,7 +499,7 @@ export default function ViewerInterface() {
                           </span>
                           <button
                             onClick={() => handleJoinPublicRoom(room.id)}
-                            disabled={isJoining || (playbackMode === 'device' && !selectedDeviceId)}
+                            disabled={isJoining || (playbackMode === 'device' && _user && !selectedDeviceId)}
                             className="btn-primary btn-sm"
                           >
                             {isJoining ? (
@@ -545,8 +546,8 @@ export default function ViewerInterface() {
               <div className="card-content">
                 <div className="space-y-4">
                   {/* Room Status */}
-                  <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                    <span className="text-sm font-medium">Status</span>
+                  <div className="flex items-center justify-between p-3 status-section rounded-lg">
+                    <span className="text-sm status-label">Status</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       currentRoom.is_active 
                         ? 'bg-green-500/20 text-green-600' 
@@ -557,17 +558,17 @@ export default function ViewerInterface() {
                   </div>
 
                   {/* Member Count */}
-                  <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                    <span className="text-sm font-medium">Members</span>
-                    <span className="flex items-center text-sm text-surface-primary/70">
+                  <div className="flex items-center justify-between p-3 status-section rounded-lg">
+                    <span className="text-sm status-label">Members</span>
+                    <span className="flex items-center text-sm text-medium-contrast font-medium">
                       <Users className="w-4 h-4 mr-1" />
                       {currentRoom.member_count}
                     </span>
                   </div>
 
                   {/* Connection Status */}
-                  <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                    <span className="text-sm font-medium">Connection</span>
+                  <div className="flex items-center justify-between p-3 status-section rounded-lg">
+                    <span className="text-sm status-label">Connection</span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                       isConnected 
                         ? 'bg-green-500/20 text-green-600' 
@@ -579,14 +580,14 @@ export default function ViewerInterface() {
 
                   {/* Current Device */}
                   {playbackMode === 'device' && (
-                    <div className="p-3 bg-surface-secondary rounded-lg">
-                      <p className="text-sm font-medium mb-2">Current Device</p>
+                    <div className="p-3 status-section rounded-lg">
+                      <p className="text-sm status-label mb-2">Current Device</p>
                       {devices.find(d => d.id === selectedDeviceId) && (
                         <div className="flex items-center">
                           <span className="text-2xl mr-2">
                             {getDeviceIcon(devices.find(d => d.id === selectedDeviceId)!.type)}
                           </span>
-                          <span className="text-sm text-surface-primary/70">
+                          <span className="text-sm text-medium-contrast font-medium">
                             {devices.find(d => d.id === selectedDeviceId)!.name}
                           </span>
                         </div>
@@ -596,9 +597,9 @@ export default function ViewerInterface() {
 
                   {/* Spotify Commands */}
                   {playbackMode === 'commands' && spotifyCommands && (
-                    <div className="p-3 bg-surface-secondary rounded-lg">
+                    <div className="p-3 status-section rounded-lg">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm font-medium">Spotify Commands</p>
+                        <p className="text-sm status-label">Spotify Commands</p>
                         <button
                           onClick={copySpotifyCommands}
                           className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded hover:bg-green-500/30 transition-colors"
@@ -607,7 +608,7 @@ export default function ViewerInterface() {
                         </button>
                       </div>
                       <div className="bg-black/20 rounded p-3 max-h-40 overflow-y-auto">
-                        <pre className="text-xs text-surface-primary/70 whitespace-pre-wrap font-mono">
+                        <pre className="text-xs text-medium-contrast whitespace-pre-wrap font-mono">
                           {spotifyCommands}
                         </pre>
                       </div>
@@ -616,11 +617,11 @@ export default function ViewerInterface() {
 
                   {/* Browser Playback Status */}
                   {playbackMode === 'browser' && (
-                    <div className="p-3 bg-surface-secondary rounded-lg">
-                      <p className="text-sm font-medium mb-2">Browser Playback</p>
+                    <div className="p-3 status-section rounded-lg">
+                      <p className="text-sm status-label mb-2">Browser Playback</p>
                       <div className="flex items-center">
                         <span className="text-2xl mr-2">🌐</span>
-                        <span className="text-sm text-surface-primary/70">
+                        <span className="text-sm text-medium-contrast font-medium">
                           {playbackState?.track ? 'Click buttons above to play on YouTube/Apple Music' : 'Waiting for host to start music'}
                         </span>
                       </div>
@@ -674,8 +675,8 @@ export default function ViewerInterface() {
                     >
                       <span className="text-2xl mr-3">{getDeviceIcon(device.type)}</span>
                       <div className="flex-1">
-                        <p className="font-medium text-surface-primary">{device.name}</p>
-                        <p className="text-sm text-surface-primary/70 capitalize">{device.type}</p>
+                        <p className="font-medium text-primary">{device.name}</p>
+                        <p className="text-sm text-secondary capitalize">{device.type}</p>
                       </div>
                       <div className="flex items-center space-x-2">
                         {device.is_active && (
@@ -686,7 +687,7 @@ export default function ViewerInterface() {
                           className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
                             selectedDeviceId === device.id
                               ? 'bg-primary-500 text-white'
-                              : 'bg-surface-tertiary text-surface-primary hover:bg-primary-500 hover:text-white'
+                              : 'bg-surface-tertiary text-primary hover:bg-primary-500 hover:text-white'
                           }`}
                         >
                           {selectedDeviceId === device.id ? 'Active' : 'Use'}
@@ -724,13 +725,13 @@ export default function ViewerInterface() {
 
                   {/* Track Info */}
                   <div className="text-center">
-                    <h3 className="text-xl font-semibold text-surface-primary mb-2">
+                    <h3 className="text-xl font-bold text-high-contrast mb-2">
                       {playbackState.track?.name || 'Unknown Track'}
                     </h3>
-                    <p className="text-surface-primary/70 mb-1">
+                    <p className="text-secondary mb-1">
                       {playbackState.track?.artist || 'Unknown Artist'}
                     </p>
-                    <p className="text-sm text-surface-primary/50">
+                    <p className="text-sm text-tertiary">
                       {playbackState.track?.album || 'Unknown Album'}
                     </p>
                   </div>
@@ -743,7 +744,7 @@ export default function ViewerInterface() {
                         style={{ width: `${getProgressPercent()}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-sm text-surface-primary/70">
+                    <div className="flex justify-between text-sm text-secondary">
                       <span>{formatTime(playbackState.position_ms)}</span>
                       <span>{formatTime(playbackState.duration_ms)}</span>
                     </div>
@@ -762,11 +763,11 @@ export default function ViewerInterface() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Music className="w-16 h-16 text-surface-primary/30 mx-auto mb-4" />
-                  <p className="text-surface-primary/50">
+                  <Music className="w-16 h-16 text-tertiary mx-auto mb-4" />
+                  <p className="text-tertiary">
                     No track currently playing
                   </p>
-                  <p className="text-sm text-surface-primary/30 mt-1">
+                  <p className="text-sm text-tertiary mt-1">
                     Wait for the host to start playing music
                   </p>
                 </div>
@@ -781,25 +782,25 @@ export default function ViewerInterface() {
             </div>
             <div className="card-content">
               <div className="space-y-4">
-                <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                  <span className="text-sm font-medium">Connection</span>
+                <div className="flex items-center justify-between p-3 status-section rounded-lg">
+                  <span className="text-sm status-label">Connection</span>
                   <div className="flex items-center space-x-2">
                     {isConnected ? (
                       <>
                         <Wifi className="w-4 h-4 text-green-500" />
-                        <span className="text-green-600 text-sm">Connected</span>
+                        <span className="text-green-600 text-sm font-medium">Connected</span>
                       </>
                     ) : (
                       <>
                         <WifiOff className="w-4 h-4 text-red-500" />
-                        <span className="text-red-600 text-sm">Disconnected</span>
+                        <span className="text-red-600 text-sm font-medium">Disconnected</span>
                       </>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                  <span className="text-sm font-medium">Room Status</span>
+                <div className="flex items-center justify-between p-3 status-section rounded-lg">
+                  <span className="text-sm status-label">Room Status</span>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     currentRoom?.is_active 
                       ? 'bg-green-500/20 text-green-600' 
@@ -809,8 +810,8 @@ export default function ViewerInterface() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
-                  <span className="text-sm font-medium">Sync Quality</span>
+                <div className="flex items-center justify-between p-3 status-section rounded-lg">
+                  <span className="text-sm status-label">Sync Quality</span>
                   <span className="px-2 py-1 rounded-full text-xs font-medium bg-primary-500/20 text-primary-600">
                     {isConnected && currentRoom?.is_active ? 'Excellent' : 'Waiting'}
                   </span>
@@ -825,7 +826,7 @@ export default function ViewerInterface() {
               <h2 className="card-title">Getting Started</h2>
             </div>
             <div className="card-content">
-              <div className="space-y-3 text-sm text-surface-primary/70">
+              <div className="space-y-3 text-sm text-secondary">
                 <div className="flex items-start space-x-2">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
                   <p>Get a room ID from the host</p>

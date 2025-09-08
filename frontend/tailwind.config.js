@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -25,19 +26,46 @@ export default {
           white: '#FFFFFF',
           gray: '#535353',
         },
+        // Light mode colors
         background: {
-          primary: '#0f0f23',
-          secondary: '#1a1a2e',
-          tertiary: '#16213e',
+          primary: '#ffffff',
+          secondary: '#f8fafc',
+          tertiary: '#f1f5f9',
         },
         surface: {
           primary: '#ffffff',
-          secondary: '#f8fafc',
+          secondary: '#f1f5f9',
           tertiary: '#e2e8f0',
         },
-        border: '#e2e8f0',
-        ring: '#0ea5e9',
-        'ring-offset': '#ffffff'
+        text: {
+          primary: '#0f172a',
+          secondary: '#334155',
+          tertiary: '#475569',
+        },
+        border: {
+          primary: '#e2e8f0',
+          secondary: '#cbd5e1',
+        },
+        // Dark mode colors (will be overridden by CSS variables)
+        'dark-background': {
+          primary: '#0f172a',
+          secondary: '#1e293b',
+          tertiary: '#334155',
+        },
+        'dark-surface': {
+          primary: '#1e293b',
+          secondary: '#1e293b',
+          tertiary: '#475569',
+        },
+        'dark-text': {
+          primary: '#f8fafc',
+          secondary: '#e2e8f0',
+          tertiary: '#cbd5e1',
+        },
+        'dark-border': {
+          primary: '#475569',
+          secondary: '#64748b',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

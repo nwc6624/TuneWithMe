@@ -2,14 +2,40 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Dark mode styles */
-.dark {
-  color-scheme: dark;
+/* CSS Variables for theme switching */
+:root {
+  /* Light mode colors - Enhanced contrast */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f1f5f9;
+  --surface-tertiary: #e2e8f0;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-tertiary: #475569;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e1;
+  --ring-color: #0ea5e9;
+  --ring-offset: #ffffff;
 }
 
-.dark body {
-  background-color: #0f172a;
-  color: #f1f5f9;
+/* Dark mode colors - Enhanced contrast */
+.dark {
+  color-scheme: dark;
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --surface-primary: #1e293b;
+  --surface-secondary: #1e293b;
+  --surface-tertiary: #475569;
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-tertiary: #cbd5e1;
+  --border-primary: #475569;
+  --border-secondary: #64748b;
+  --ring-color: #38bdf8;
+  --ring-offset: #0f172a;
 }
 
 /* Light mode styles */
@@ -17,34 +43,46 @@
   color-scheme: light;
 }
 
-.light body {
-  background-color: #ffffff;
-  color: #1e293b;
+/* Base body styles */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50;
+    --tw-ring-color: var(--ring-color);
   }
 
   .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 h-10 py-2 px-4;
+    @apply bg-primary-600 text-white hover:bg-primary-700 h-10 py-2 px-4 shadow-sm hover:shadow-md;
+    font-weight: 600;
   }
 
   .btn-secondary {
-    @apply bg-gray-100 text-gray-900 hover:bg-gray-200 h-10 py-2 px-4 dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600;
+    background-color: var(--surface-secondary);
+    color: var(--text-primary);
+    @apply hover:bg-opacity-80 h-10 py-2 px-4 border border-solid font-medium;
+    border-color: var(--border-primary);
   }
 
   .btn-outline {
-    @apply border border-gray-300 bg-transparent hover:bg-gray-100 h-10 py-2 px-4 dark:border-slate-600 dark:hover:bg-slate-700;
+    background-color: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-primary);
+    @apply hover:bg-opacity-10 h-10 py-2 px-4 border border-solid font-medium;
   }
 
   .btn-ghost {
-    @apply hover:bg-gray-100 h-10 py-2 px-4 dark:hover:bg-slate-700;
+    background-color: transparent;
+    color: var(--text-primary);
+    @apply hover:bg-opacity-10 h-10 py-2 px-4 font-medium;
   }
 
   .btn-link {
-    @apply text-blue-600 underline-offset-4 hover:underline h-10 py-2 px-4;
+    @apply text-primary-600 underline-offset-4 hover:underline h-10 py-2 px-4;
   }
 
   .btn-sm {
@@ -56,11 +94,22 @@
   }
 
   .input {
-    @apply flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-400;
+    background-color: var(--surface-primary);
+    color: var(--text-primary);
+    border-color: var(--border-primary);
+    @apply flex h-10 w-full rounded-md border border-solid px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50 transition-colors;
+    --tw-ring-color: var(--ring-color);
+  }
+
+  .input::placeholder {
+    color: var(--text-tertiary);
   }
 
   .card {
-    @apply rounded-lg border border-gray-200 bg-white text-gray-900 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white;
+    background-color: var(--surface-primary);
+    color: var(--text-primary);
+    border-color: var(--border-primary);
+    @apply rounded-lg border border-solid shadow-sm transition-colors;
   }
 
   .card-header {
@@ -69,10 +118,13 @@
 
   .card-title {
     @apply text-2xl font-semibold leading-none tracking-tight;
+    color: var(--text-primary);
+    font-weight: 700;
   }
 
   .card-description {
-    @apply text-sm text-gray-600 dark:text-slate-400;
+    @apply text-sm font-medium;
+    color: var(--text-secondary);
   }
 
   .card-content {
@@ -81,5 +133,105 @@
 
   .card-footer {
     @apply flex items-center p-6 pt-0;
+  }
+
+  /* Enhanced text utilities */
+  .text-primary {
+    color: var(--text-primary);
+  }
+
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
+  .text-tertiary {
+    color: var(--text-tertiary);
+  }
+
+  .bg-primary {
+    background-color: var(--bg-primary);
+  }
+
+  .bg-secondary {
+    background-color: var(--bg-secondary);
+  }
+
+  .bg-tertiary {
+    background-color: var(--bg-tertiary);
+  }
+
+  .surface-primary {
+    background-color: var(--surface-primary);
+  }
+
+  .surface-secondary {
+    background-color: var(--surface-secondary);
+  }
+
+  .surface-tertiary {
+    background-color: var(--surface-tertiary);
+  }
+
+  .border-primary {
+    border-color: var(--border-primary);
+  }
+
+  .border-secondary {
+    border-color: var(--border-secondary);
+  }
+
+  /* Enhanced text contrast utilities */
+  .text-high-contrast {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .text-medium-contrast {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .text-low-contrast {
+    color: var(--text-tertiary);
+    font-weight: 400;
+  }
+
+  /* Enhanced surface contrast */
+  .surface-high-contrast {
+    background-color: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+  }
+
+  .surface-medium-contrast {
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-secondary);
+  }
+
+  /* Enhanced hover states */
+  .hover-contrast:hover {
+    background-color: var(--surface-secondary);
+    color: var(--text-primary);
+  }
+
+  .hover-text-contrast:hover {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  /* Status section enhancements */
+  .status-section {
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-primary);
+  }
+
+  .status-section .status-label {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .status-section .status-value {
+    color: var(--text-secondary);
+    font-weight: 500;
   }
 }

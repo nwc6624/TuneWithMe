@@ -403,7 +403,7 @@ export default function HostDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className={`text-4xl font-bold mb-2 transition-colors duration-200 ${
-              isDark ? 'text-white' : 'text-gray-900'
+              'text-primary'
             }`}>
               🎵 Host Dashboard
             </h1>
@@ -418,7 +418,7 @@ export default function HostDashboard() {
             onClick={() => setShowSettings(!showSettings)}
             className={`p-3 rounded-lg transition-all duration-200 ${
               showSettings
-                ? 'bg-blue-500 text-white shadow-lg'
+                ? 'bg-primary-500 text-white shadow-lg'
                 : isDark 
                   ? 'bg-slate-700 hover:bg-slate-600 text-slate-300' 
                   : 'bg-gray-100 hover:bg-gray-200 text-gray-600'
@@ -436,7 +436,7 @@ export default function HostDashboard() {
             isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'
           } shadow-sm border`}>
             <h2 className={`text-xl font-semibold mb-4 transition-colors duration-200 ${
-              isDark ? 'text-white' : 'text-gray-900'
+              'text-primary'
             }`}>
               Settings
             </h2>
@@ -709,7 +709,7 @@ export default function HostDashboard() {
                           ) : (
                             <div>
                               <h3 className={`font-semibold text-lg transition-colors duration-200 ${
-                                isDark ? 'text-white' : 'text-gray-900'
+                                'text-primary'
                               }`}>
                                 {room.name}
                               </h3>
@@ -816,7 +816,7 @@ export default function HostDashboard() {
                       <div className="flex items-center justify-between">
                         <div>
                           <h4 className={`font-medium transition-colors duration-200 ${
-                            isDark ? 'text-white' : 'text-gray-900'
+                            'text-primary'
                           }`}>
                             {room.name}
                           </h4>
