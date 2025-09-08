@@ -366,7 +366,6 @@ export default function ViewerInterface() {
                         ))}
                       </div>
                     )}
-                    </div>
                   )}
 
                   {/* Browser Mode Info */}
