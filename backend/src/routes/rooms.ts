@@ -72,10 +72,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
   // Get list of public rooms
   fastify.get('/rooms/public', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const session = (request as any).session
-      if (!session?.authenticated || !session.user_id) {
-        return reply.status(401).send({ error: 'Not authenticated' })
-      }
+      // Public rooms should be accessible without authentication
 
       // Get all room keys
       const keys = await redis.getClient().keys('room:*')
@@ -93,7 +90,8 @@ export default async function roomRoutes(fastify: FastifyInstance) {
               description: room.description,
               host_name: room.host_name,
               member_count: room.member_count,
-              created_at: room.created_at
+              created_at: room.created_at,
+              is_active: room.is_active
             })
           }
         }
@@ -146,7 +144,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
         visibility: visibility,
         room_code: roomCode,
         created_at: new Date().toISOString(),
-        is_active: false,
+        is_active: visibility === 'public', // Auto-activate public rooms
         member_count: 1,
         members: [session.user_id]
       }
@@ -157,7 +155,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       // Store user's current room
       await redis.getClient().setEx(`user_room:${session.user_id}`, 3600, roomId)
 
-      logger.info(`Room created: ${roomId} by user: ${session.user_id}`)
+      logger.info(`Room created: ${roomId} by user: ${session.user_id}, visibility: ${visibility}, is_active: ${room.is_active}`)
       
       return reply.send({ 
         room_id: roomId,
@@ -234,12 +232,14 @@ export default async function roomRoutes(fastify: FastifyInstance) {
     try {
       const session = (request as any).session
       if (!session?.authenticated || !session.user_id) {
+        logger.info('Join room failed: Not authenticated')
         return reply.status(401).send({ error: 'Not authenticated' })
       }
 
       const { roomId } = request.params as { roomId: string }
       const { room_code, device_id: _device_id } = joinRoomSchema.parse(request.body)
 
+      logger.info(`User ${session.user_id} attempting to join room: ${roomId}`)
       let targetRoomId = roomId
       
       // If room_code is provided, find the room by code
@@ -263,13 +263,16 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       // Get room from Redis
       const roomData = await redis.getClient().get(`room:${targetRoomId}`)
       if (!roomData) {
+        logger.info(`Room not found: ${targetRoomId}`)
         return reply.status(404).send({ error: 'Room not found' })
       }
 
       const room = JSON.parse(roomData)
+      logger.info(`Found room: ${room.name} with ${room.member_count} members`)
       
       // Check if user is already in the room
       if (room.members.includes(session.user_id)) {
+        logger.info(`User ${session.user_id} already in room: ${targetRoomId}`)
         return reply.status(400).send({ error: 'Already in room' })
       }
 
@@ -278,12 +281,12 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       room.member_count = room.members.length
 
       // Update room in Redis
-      await redis.getClient().setEx(`room:${roomId}`, 3600, JSON.stringify(room))
+      await redis.getClient().setEx(`room:${targetRoomId}`, 3600, JSON.stringify(room))
       
       // Store user's current room
-      await redis.getClient().setEx(`user_room:${session.user_id}`, 3600, roomId)
+      await redis.getClient().setEx(`user_room:${session.user_id}`, 3600, targetRoomId)
 
-      logger.info(`User ${session.user_id} joined room: ${roomId}`)
+      logger.info(`User ${session.user_id} successfully joined room: ${targetRoomId}`)
       
       return reply.send({ 
         success: true,

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useRoom } from '../contexts/RoomContext'
 import { useAuth } from '../contexts/AuthContext'
 import { Users, Music, Clock, Globe } from 'lucide-react'
@@ -14,12 +15,14 @@ interface PublicRoom {
 }
 
 export default function PublicRooms() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const { joinRoom, getPublicRooms } = useRoom()
   
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isJoining, setIsJoining] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadPublicRooms()
@@ -38,14 +41,24 @@ export default function PublicRooms() {
   }
 
   const handleJoinRoom = async (roomId: string) => {
+    console.log('Attempting to join room:', roomId)
     setIsJoining(roomId)
+    setError(null)
     try {
+      console.log('Calling joinRoom function...')
       const success = await joinRoom(roomId)
+      console.log('Join room result:', success)
       if (success) {
-        // Room joined successfully, user will be redirected
+        console.log('Room joined successfully, navigating to:', `/room/${roomId}`)
+        // Room joined successfully, navigate to the room
+        navigate(`/room/${roomId}`)
+      } else {
+        console.log('Join room failed')
+        setError('Failed to join room. Please try again.')
       }
     } catch (error) {
       console.error('Failed to join room:', error)
+      setError(`Failed to join room: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsJoining(null)
     }
@@ -107,6 +120,22 @@ export default function PublicRooms() {
           </button>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Rooms List */}
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -126,30 +155,30 @@ export default function PublicRooms() {
               <div key={room.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1 bg-white px-2 py-1 rounded">
                       {room.name}
                     </h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                      by {room.host_name}
+                    <p className="text-sm text-gray-600 mb-2 bg-gray-50 px-2 py-1 rounded">
+                      Host: {room.host_name}
                     </p>
                     {room.description && (
-                      <p className="text-sm text-gray-700 mb-3">
+                      <p className="text-sm text-gray-700 mb-3 bg-gray-50 px-2 py-1 rounded">
                         {room.description}
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center text-xs text-gray-500">
+                  <div className="flex items-center text-xs text-gray-500 bg-blue-50 px-2 py-1 rounded">
                     <Globe className="w-3 h-3 mr-1" />
                     Public
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
                     <Users className="w-4 h-4 mr-1" />
                     {room.member_count} {room.member_count === 1 ? 'member' : 'members'}
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
+                  <div className="flex items-center text-sm text-gray-600 bg-gray-50 px-2 py-1 rounded">
                     <Clock className="w-4 h-4 mr-1" />
                     {formatTimeAgo(room.created_at)}
                   </div>
