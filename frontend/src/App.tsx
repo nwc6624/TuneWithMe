@@ -56,26 +56,18 @@ function App() {
         <Route
           path="/room/:roomId"
           element={
-            user ? (
-              <Layout>
-                {user.role === 'host' ? <HostDashboard /> : <ViewerInterface />}
-              </Layout>
-            ) : (
-              <Navigate to="/" replace />
-            )
+            <Layout>
+              {user && user.role === 'host' ? <HostDashboard /> : <ViewerInterface />}
+            </Layout>
           }
         />
         
         <Route
           path="/public-rooms"
           element={
-            user ? (
-              <Layout>
-                <PublicRooms />
-              </Layout>
-            ) : (
-              <Navigate to="/" replace />
-            )
+            <Layout>
+              <PublicRooms />
+            </Layout>
           }
         />
         

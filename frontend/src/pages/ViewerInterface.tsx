@@ -34,12 +34,18 @@ export default function ViewerInterface() {
   const [isLoadingDevices, setIsLoadingDevices] = useState(false)
   const [publicRooms, setPublicRooms] = useState<any[]>([])
   const [isLoadingPublicRooms, setIsLoadingPublicRooms] = useState(false)
+  const [playbackMode, setPlaybackMode] = useState<'device' | 'browser' | 'commands'>('device')
+  const [spotifyCommands, setSpotifyCommands] = useState<string>('')
 
   useEffect(() => {
     if (currentRoom) {
-      loadDevices()
+      // Only load devices for authenticated users
+      if (_user) {
+        loadDevices()
+      }
+      generateSpotifyCommands()
     }
-  }, [currentRoom])
+  }, [currentRoom, playbackState, _user])
 
   useEffect(() => {
     loadPublicRooms()
@@ -71,6 +77,47 @@ export default function ViewerInterface() {
     }
   }
 
+  const generateSpotifyCommands = () => {
+    if (!playbackState?.track) return
+
+    const track = playbackState.track
+    const artistNames = track.artists?.map(a => a.name).join(', ') || 'Unknown Artist'
+    const artistSearch = track.artists?.map(a => a.name).join(' ') || 'Unknown Artist'
+    
+    const commands = [
+      `// Spotify Commands for: ${track.name || 'Unknown Track'} by ${artistNames}`,
+      `// Copy and paste these commands in your Spotify app or browser:`,
+      ``,
+      `// 1. Search for the track:`,
+      `spotify:search:${encodeURIComponent((track.name || 'Unknown Track') + ' ' + artistSearch)}`,
+      ``,
+      `// 2. Direct track link:`,
+      `spotify:track:${track.id || 'unknown'}`,
+      ``,
+      `// 3. Web URL:`,
+      track.external_urls?.spotify || `https://open.spotify.com/track/${track.id || 'unknown'}`,
+      ``,
+      `// 4. Manual search in Spotify:`,
+      `Search: "${track.name || 'Unknown Track'}" by ${artistNames}`,
+      ``,
+      `// 5. Album link (if available):`,
+      track.album?.external_urls?.spotify ? `spotify:album:${track.album.id}` : '// Album not available',
+      track.album?.external_urls?.spotify || '// Album not available'
+    ]
+
+    setSpotifyCommands(commands.join('\n'))
+  }
+
+  const copySpotifyCommands = async () => {
+    try {
+      await navigator.clipboard.writeText(spotifyCommands)
+      // You could add a toast notification here
+      console.log('Spotify commands copied to clipboard!')
+    } catch (error) {
+      console.error('Failed to copy commands:', error)
+    }
+  }
+
   const loadPublicRooms = async () => {
     setIsLoadingPublicRooms(true)
     try {
@@ -88,7 +135,10 @@ export default function ViewerInterface() {
     
     setIsJoining(true)
     try {
-      const success = await joinRoom(roomId.trim(), selectedDeviceId)
+      // For device mode, pass the selected device ID
+      // For browser and commands mode, pass null or empty string
+      const deviceId = playbackMode === 'device' ? selectedDeviceId : undefined
+      const success = await joinRoom(roomId.trim(), deviceId)
       if (success) {
         setRoomId('')
       }
@@ -102,7 +152,10 @@ export default function ViewerInterface() {
   const handleJoinPublicRoom = async (roomId: string) => {
     setIsJoining(true)
     try {
-      const success = await joinRoom(roomId, selectedDeviceId)
+      // For device mode, pass the selected device ID
+      // For browser and commands mode, pass null or empty string
+      const deviceId = playbackMode === 'device' ? selectedDeviceId : undefined
+      const success = await joinRoom(roomId, deviceId)
       if (success) {
         setRoomId('')
       }
@@ -139,8 +192,10 @@ export default function ViewerInterface() {
       
       if (response.ok) {
         setSelectedDeviceId(deviceId)
-        // Reload devices to update active status
-        loadDevices()
+        // Reload devices to update active status (only for authenticated users)
+        if (_user) {
+          loadDevices()
+        }
       }
     } catch (error) {
       console.error('Failed to transfer playback:', error)
@@ -218,11 +273,63 @@ export default function ViewerInterface() {
                     />
                   </div>
                   
-                  {/* Device Selection */}
+                  {/* Playback Mode Selection */}
                   <div>
                     <label className="block text-sm font-medium text-surface-primary mb-2">
-                      Select Device
+                      Playback Mode
                     </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setPlaybackMode('device')}
+                        className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                          playbackMode === 'device'
+                            ? 'border-primary-500 bg-primary-500/10 text-primary-400'
+                            : 'border-surface-tertiary hover:border-primary-400/50 text-surface-primary'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="text-lg mb-1">🎵</div>
+                          <div>Device</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlaybackMode('browser')}
+                        className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                          playbackMode === 'browser'
+                            ? 'border-primary-500 bg-primary-500/10 text-primary-400'
+                            : 'border-surface-tertiary hover:border-primary-400/50 text-surface-primary'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="text-lg mb-1">🌐</div>
+                          <div>Browser</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlaybackMode('commands')}
+                        className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
+                          playbackMode === 'commands'
+                            ? 'border-primary-500 bg-primary-500/10 text-primary-400'
+                            : 'border-surface-tertiary hover:border-primary-400/50 text-surface-primary'
+                        }`}
+                      >
+                        <div className="text-center">
+                          <div className="text-lg mb-1">📋</div>
+                          <div>Commands</div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Device Selection - Only show for device mode */}
+                  {playbackMode === 'device' && (
+                    <div>
+                      <label className="block text-sm font-medium text-surface-primary mb-2">
+                        Select Device
+                      </label>
                     {isLoadingDevices ? (
                       <div className="flex items-center justify-center p-4">
                         <LoadingSpinner size="sm" />
@@ -259,11 +366,71 @@ export default function ViewerInterface() {
                         ))}
                       </div>
                     )}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Browser Mode Info */}
+                  {playbackMode === 'browser' && (
+                    <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="text-blue-400 text-xl">🌐</div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-blue-400 mb-1">Browser Playback</h4>
+                          <p className="text-sm text-surface-primary/70 mb-3">
+                            Since Spotify doesn't allow direct streaming to guests, you can play the same song on YouTube or other platforms.
+                          </p>
+                          {playbackState?.track && (
+                            <div className="space-y-2">
+                              <button
+                                onClick={() => {
+                                  const trackName = playbackState.track?.name || 'Unknown Track'
+                                  const artistName = playbackState.track?.artists?.map(a => a.name).join(' ') || 'Unknown Artist'
+                                  const searchQuery = encodeURIComponent(`${trackName} ${artistName}`)
+                                  window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank')
+                                }}
+                                className="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                              >
+                                <span>🎵</span>
+                                <span>Play on YouTube</span>
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const trackName = playbackState.track?.name || 'Unknown Track'
+                                  const artistName = playbackState.track?.artists?.map(a => a.name).join(' ') || 'Unknown Artist'
+                                  const searchQuery = encodeURIComponent(`${trackName} ${artistName}`)
+                                  window.open(`https://music.apple.com/search?term=${searchQuery}`, '_blank')
+                                }}
+                                className="w-full bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                              >
+                                <span>🎧</span>
+                                <span>Play on Apple Music</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Commands Mode Info */}
+                  {playbackMode === 'commands' && (
+                    <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <div className="text-green-400 text-xl">📋</div>
+                        <div>
+                          <h4 className="font-medium text-green-400 mb-1">Copy Commands</h4>
+                          <p className="text-sm text-surface-primary/70">
+                            Copy Spotify commands to manually play the same track in your Spotify app.
+                            Commands will be generated when you join a room with active playback.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     onClick={handleJoinRoom}
-                    disabled={isJoining || !roomId.trim() || !selectedDeviceId}
+                    disabled={isJoining || !roomId.trim() || (playbackMode === 'device' && !selectedDeviceId)}
                     className="btn-primary w-full"
                   >
                     {isJoining ? (
@@ -332,7 +499,7 @@ export default function ViewerInterface() {
                           </span>
                           <button
                             onClick={() => handleJoinPublicRoom(room.id)}
-                            disabled={isJoining || !selectedDeviceId}
+                            disabled={isJoining || (playbackMode === 'device' && !selectedDeviceId)}
                             className="btn-primary btn-sm"
                           >
                             {isJoining ? (
@@ -412,19 +579,54 @@ export default function ViewerInterface() {
                   </div>
 
                   {/* Current Device */}
-                  <div className="p-3 bg-surface-secondary rounded-lg">
-                    <p className="text-sm font-medium mb-2">Current Device</p>
-                    {devices.find(d => d.id === selectedDeviceId) && (
+                  {playbackMode === 'device' && (
+                    <div className="p-3 bg-surface-secondary rounded-lg">
+                      <p className="text-sm font-medium mb-2">Current Device</p>
+                      {devices.find(d => d.id === selectedDeviceId) && (
+                        <div className="flex items-center">
+                          <span className="text-2xl mr-2">
+                            {getDeviceIcon(devices.find(d => d.id === selectedDeviceId)!.type)}
+                          </span>
+                          <span className="text-sm text-surface-primary/70">
+                            {devices.find(d => d.id === selectedDeviceId)!.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Spotify Commands */}
+                  {playbackMode === 'commands' && spotifyCommands && (
+                    <div className="p-3 bg-surface-secondary rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">Spotify Commands</p>
+                        <button
+                          onClick={copySpotifyCommands}
+                          className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded hover:bg-green-500/30 transition-colors"
+                        >
+                          Copy All
+                        </button>
+                      </div>
+                      <div className="bg-black/20 rounded p-3 max-h-40 overflow-y-auto">
+                        <pre className="text-xs text-surface-primary/70 whitespace-pre-wrap font-mono">
+                          {spotifyCommands}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Browser Playback Status */}
+                  {playbackMode === 'browser' && (
+                    <div className="p-3 bg-surface-secondary rounded-lg">
+                      <p className="text-sm font-medium mb-2">Browser Playback</p>
                       <div className="flex items-center">
-                        <span className="text-2xl mr-2">
-                          {getDeviceIcon(devices.find(d => d.id === selectedDeviceId)!.type)}
-                        </span>
+                        <span className="text-2xl mr-2">🌐</span>
                         <span className="text-sm text-surface-primary/70">
-                          {devices.find(d => d.id === selectedDeviceId)!.name}
+                          {playbackState?.track ? 'Click buttons above to play on YouTube/Apple Music' : 'Waiting for host to start music'}
                         </span>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Actions */}
                   <div className="flex space-x-2">
@@ -515,7 +717,7 @@ export default function ViewerInterface() {
                   {/* Album Art */}
                   <div className="flex justify-center">
                     <img
-                      src={playbackState.track.album_art_url}
+                      src={playbackState.track?.album_art_url || '/placeholder-album.png'}
                       alt="Album Art"
                       className="w-32 h-32 rounded-lg object-cover shadow-lg"
                     />
@@ -524,13 +726,13 @@ export default function ViewerInterface() {
                   {/* Track Info */}
                   <div className="text-center">
                     <h3 className="text-xl font-semibold text-surface-primary mb-2">
-                      {playbackState.track.name}
+                      {playbackState.track?.name || 'Unknown Track'}
                     </h3>
                     <p className="text-surface-primary/70 mb-1">
-                      {playbackState.track.artist}
+                      {playbackState.track?.artist || 'Unknown Artist'}
                     </p>
                     <p className="text-sm text-surface-primary/50">
-                      {playbackState.track.album}
+                      {playbackState.track?.album || 'Unknown Album'}
                     </p>
                   </div>
 

@@ -231,15 +231,27 @@ export default async function roomRoutes(fastify: FastifyInstance) {
   fastify.post('/rooms/:roomId/join', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const session = (request as any).session
-      if (!session?.authenticated || !session.user_id) {
-        logger.info('Join room failed: Not authenticated')
-        return reply.status(401).send({ error: 'Not authenticated' })
+      
+      // Allow anonymous users to join as viewers
+      let userId: string
+      let userName: string
+      
+      if (session?.authenticated && session.user_id) {
+        // Authenticated user
+        userId = session.user_id
+        userName = session.display_name || 'Authenticated User'
+        logger.info(`Authenticated user ${userId} joining room`)
+      } else {
+        // Anonymous user - generate temporary ID
+        userId = `anonymous_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        userName = 'Anonymous Viewer'
+        logger.info(`Anonymous user ${userId} joining room`)
       }
 
       const { roomId } = request.params as { roomId: string }
       const { room_code, device_id: _device_id } = joinRoomSchema.parse(request.body)
 
-      logger.info(`User ${session.user_id} attempting to join room: ${roomId}`)
+      logger.info(`User ${userId} attempting to join room: ${roomId}`)
       let targetRoomId = roomId
       
       // If room_code is provided, find the room by code
@@ -271,26 +283,33 @@ export default async function roomRoutes(fastify: FastifyInstance) {
       logger.info(`Found room: ${room.name} with ${room.member_count} members`)
       
       // Check if user is already in the room
-      if (room.members.includes(session.user_id)) {
-        logger.info(`User ${session.user_id} already in room: ${targetRoomId}`)
+      if (room.members.includes(userId)) {
+        logger.info(`User ${userId} already in room: ${targetRoomId}`)
         return reply.status(400).send({ error: 'Already in room' })
       }
 
       // Add user to room
-      room.members.push(session.user_id)
+      room.members.push(userId)
       room.member_count = room.members.length
 
       // Update room in Redis
       await redis.getClient().setEx(`room:${targetRoomId}`, 3600, JSON.stringify(room))
       
-      // Store user's current room
-      await redis.getClient().setEx(`user_room:${session.user_id}`, 3600, targetRoomId)
+      // Store user's current room (only for authenticated users)
+      if (session?.authenticated && session.user_id) {
+        await redis.getClient().setEx(`user_room:${userId}`, 3600, targetRoomId)
+      }
 
-      logger.info(`User ${session.user_id} successfully joined room: ${targetRoomId}`)
+      logger.info(`User ${userId} successfully joined room: ${targetRoomId}`)
       
       return reply.send({ 
         success: true,
-        room: room
+        room: room,
+        user: {
+          id: userId,
+          name: userName,
+          is_authenticated: session?.authenticated || false
+        }
       })
     } catch (error) {
       logger.error('Failed to join room:', error)
@@ -302,10 +321,6 @@ export default async function roomRoutes(fastify: FastifyInstance) {
   fastify.get('/rooms/:roomId/state', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const session = (request as any).session
-      if (!session?.authenticated || !session.user_id) {
-        return reply.status(401).send({ error: 'Not authenticated' })
-      }
-
       const { roomId } = request.params as { roomId: string }
 
       // Get room from Redis
@@ -316,14 +331,15 @@ export default async function roomRoutes(fastify: FastifyInstance) {
 
       const room = JSON.parse(roomData)
       
-      // Check if user is in the room
-      if (!room.members.includes(session.user_id)) {
+      // For anonymous users, we'll allow access to room state without membership check
+      // For authenticated users, check if they're in the room
+      if (session?.authenticated && session.user_id && !room.members.includes(session.user_id)) {
         return reply.status(403).send({ error: 'Not a member of this room' })
       }
 
       // Get current playback state from host
       let playback = null
-      if (room.host_user_id === session.user_id) {
+      if (session?.authenticated && session.user_id && room.host_user_id === session.user_id) {
         // Host gets their own playback state
         const tokens = await redis.getTokens(session.user_id)
         if (tokens) {
@@ -331,7 +347,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
           playback = await getSpotifyService().getCurrentPlayback()
         }
       } else {
-        // Viewer gets host's playback state
+        // Viewer (authenticated or anonymous) gets host's playback state
         const hostTokens = await redis.getTokens(room.host_user_id)
         if (hostTokens) {
           getSpotifyService().setAccessToken(hostTokens.access_token)

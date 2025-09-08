@@ -41,7 +41,12 @@ export default function PublicRooms() {
   }
 
   const handleJoinRoom = async (roomId: string) => {
+    console.log('=== JOIN ROOM DEBUG START ===')
+    console.log('Browser:', navigator.userAgent)
     console.log('Attempting to join room:', roomId)
+    console.log('joinRoom function available:', typeof joinRoom)
+    console.log('navigate function available:', typeof navigate)
+    
     setIsJoining(roomId)
     setError(null)
     try {
@@ -58,9 +63,15 @@ export default function PublicRooms() {
       }
     } catch (error) {
       console.error('Failed to join room:', error)
+      console.error('Error details:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      })
       setError(`Failed to join room: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsJoining(null)
+      console.log('=== JOIN ROOM DEBUG END ===')
     }
   }
 
@@ -77,16 +88,7 @@ export default function PublicRooms() {
     return date.toLocaleDateString()
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Please log in</h1>
-          <p className="text-gray-600">You need to be logged in to view public rooms.</p>
-        </div>
-      </div>
-    )
-  }
+  // Allow anonymous users to view public rooms
 
   return (
     <div className="min-h-screen bg-gray-50">

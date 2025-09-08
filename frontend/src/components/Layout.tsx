@@ -54,19 +54,35 @@ export default function Layout({ children }: LayoutProps) {
 
             {/* User Menu */}
             <div className="flex items-center space-x-4">
-              <div className={`hidden md:flex items-center space-x-2 text-sm transition-colors duration-200 ${
-                isDark ? 'text-slate-300' : 'text-gray-600'
-              }`}>
-                <User className="w-4 h-4" />
-                <span className="font-medium">{user?.display_name}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  isDark 
-                    ? 'bg-blue-900 text-blue-300' 
-                    : 'bg-blue-100 text-blue-700'
+              {user ? (
+                <div className={`hidden md:flex items-center space-x-2 text-sm transition-colors duration-200 ${
+                  isDark ? 'text-slate-300' : 'text-gray-600'
                 }`}>
-                  {user?.role}
-                </span>
-              </div>
+                  <User className="w-4 h-4" />
+                  <span className="font-medium">{user.display_name}</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    isDark 
+                      ? 'bg-blue-900 text-blue-300' 
+                      : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    {user.role}
+                  </span>
+                </div>
+              ) : (
+                <div className={`hidden md:flex items-center space-x-2 text-sm transition-colors duration-200 ${
+                  isDark ? 'text-slate-300' : 'text-gray-600'
+                }`}>
+                  <User className="w-4 h-4" />
+                  <span className="font-medium">Anonymous User</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    isDark 
+                      ? 'bg-gray-700 text-gray-300' 
+                      : 'bg-gray-100 text-gray-700'
+                  }`}>
+                    Viewer
+                  </span>
+                </div>
+              )}
               
               {/* Theme Toggle */}
               <button
@@ -81,17 +97,19 @@ export default function Layout({ children }: LayoutProps) {
                 {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               
-              <button
-                onClick={logout}
-                className={`p-2 rounded-lg transition-colors duration-200 ${
-                  isDark 
-                    ? 'text-slate-300 hover:text-white hover:bg-slate-700' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
+              {user && (
+                <button
+                  onClick={logout}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    isDark 
+                      ? 'text-slate-300 hover:text-white hover:bg-slate-700' 
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              )}
             </div>
           </div>
         </div>

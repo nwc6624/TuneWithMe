@@ -373,7 +373,11 @@ export function RoomProvider({ children }: RoomProviderProps) {
 
   const joinRoom = async (roomId: string, deviceId?: string): Promise<boolean> => {
     try {
+      console.log('=== ROOM CONTEXT DEBUG START ===')
       console.log('RoomContext: Attempting to join room:', roomId)
+      console.log('RoomContext: Browser:', navigator.userAgent)
+      console.log('RoomContext: Fetch available:', typeof fetch)
+      
       const response = await fetch(`/api/rooms/${roomId}/join`, {
         method: 'POST',
         headers: {
@@ -384,6 +388,7 @@ export function RoomProvider({ children }: RoomProviderProps) {
       })
 
       console.log('RoomContext: Join room response status:', response.status)
+      console.log('RoomContext: Response headers:', Object.fromEntries(response.headers.entries()))
       
       if (response.ok) {
         console.log('RoomContext: Join room successful, getting room state...')
@@ -407,6 +412,8 @@ export function RoomProvider({ children }: RoomProviderProps) {
         console.log('RoomContext: Connecting to WebSocket...')
         connectWebSocket(roomId)
         
+        console.log('RoomContext: Join room completed successfully')
+        console.log('=== ROOM CONTEXT DEBUG END ===')
         return true
       } else {
         const errorData = await response.text()
@@ -415,6 +422,12 @@ export function RoomProvider({ children }: RoomProviderProps) {
       }
     } catch (error) {
       console.error('RoomContext: Failed to join room:', error)
+      console.error('RoomContext: Error details:', {
+        name: error?.name,
+        message: error?.message,
+        stack: error?.stack
+      })
+      console.log('=== ROOM CONTEXT DEBUG END ===')
       return false
     }
   }
