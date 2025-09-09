@@ -740,8 +740,8 @@ export default function ViewerInterface() {
                   <div className="space-y-2">
                     <div className="w-full bg-surface-tertiary rounded-full h-2">
                       <div
-                        className="bg-primary-500 h-2 rounded-full progress-bar"
-                        style={{ '--progress-width': `${getProgressPercent()}%` } as React.CSSProperties}
+                        className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${getProgressPercent()}%` }}
                       />
                     </div>
                     <div className="flex justify-between text-sm text-secondary">
