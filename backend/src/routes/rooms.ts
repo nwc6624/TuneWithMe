@@ -70,7 +70,7 @@ export default async function roomRoutes(fastify: FastifyInstance) {
   })
 
   // Get list of public rooms
-  fastify.get('/rooms/public', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/rooms/public', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Public rooms should be accessible without authentication
 

@@ -81,8 +81,8 @@ export default function ViewerInterface() {
     if (!playbackState?.track) return
 
     const track = playbackState.track
-    const artistNames = track.artists?.map(a => a.name).join(', ') || 'Unknown Artist'
-    const artistSearch = track.artists?.map(a => a.name).join(' ') || 'Unknown Artist'
+    const artistNames = track.artist || 'Unknown Artist'
+    const artistSearch = track.artist || 'Unknown Artist'
     
     const commands = [
       `// Spotify Commands for: ${track.name || 'Unknown Track'} by ${artistNames}`,
@@ -92,17 +92,17 @@ export default function ViewerInterface() {
       `spotify:search:${encodeURIComponent((track.name || 'Unknown Track') + ' ' + artistSearch)}`,
       ``,
       `// 2. Direct track link:`,
-      `spotify:track:${track.id || 'unknown'}`,
+      `spotify:track:${track.uri.split(':')[2] || 'unknown'}`,
       ``,
       `// 3. Web URL:`,
-      track.external_urls?.spotify || `https://open.spotify.com/track/${track.id || 'unknown'}`,
+      `https://open.spotify.com/track/${track.uri.split(':')[2] || 'unknown'}`,
       ``,
       `// 4. Manual search in Spotify:`,
       `Search: "${track.name || 'Unknown Track'}" by ${artistNames}`,
       ``,
       `// 5. Album link (if available):`,
-      track.album?.external_urls?.spotify ? `spotify:album:${track.album.id}` : '// Album not available',
-      track.album?.external_urls?.spotify || '// Album not available'
+      track.album ? `spotify:album:${track.album}` : '// Album not available',
+      track.album ? `https://open.spotify.com/album/${track.album}` : '// Album not available'
     ]
 
     setSpotifyCommands(commands.join('\n'))
@@ -384,7 +384,7 @@ export default function ViewerInterface() {
                               <button
                                 onClick={() => {
                                   const trackName = playbackState.track?.name || 'Unknown Track'
-                                  const artistName = playbackState.track?.artists?.map(a => a.name).join(' ') || 'Unknown Artist'
+                                  const artistName = playbackState.track?.artist || 'Unknown Artist'
                                   const searchQuery = encodeURIComponent(`${trackName} ${artistName}`)
                                   window.open(`https://www.youtube.com/results?search_query=${searchQuery}`, '_blank')
                                 }}
@@ -396,7 +396,7 @@ export default function ViewerInterface() {
                               <button
                                 onClick={() => {
                                   const trackName = playbackState.track?.name || 'Unknown Track'
-                                  const artistName = playbackState.track?.artists?.map(a => a.name).join(' ') || 'Unknown Artist'
+                                  const artistName = playbackState.track?.artist || 'Unknown Artist'
                                   const searchQuery = encodeURIComponent(`${trackName} ${artistName}`)
                                   window.open(`https://music.apple.com/search?term=${searchQuery}`, '_blank')
                                 }}
@@ -430,7 +430,7 @@ export default function ViewerInterface() {
 
                   <button
                     onClick={handleJoinRoom}
-                    disabled={isJoining || !roomId.trim() || (playbackMode === 'device' && _user && !selectedDeviceId)}
+                    disabled={!!(isJoining || !roomId.trim() || (playbackMode === 'device' && _user && !selectedDeviceId))}
                     className="btn-primary w-full"
                   >
                     {isJoining ? (
@@ -499,7 +499,7 @@ export default function ViewerInterface() {
                           </span>
                           <button
                             onClick={() => handleJoinPublicRoom(room.id)}
-                            disabled={isJoining || (playbackMode === 'device' && _user && !selectedDeviceId)}
+                            disabled={!!(isJoining || (playbackMode === 'device' && _user && !selectedDeviceId))}
                             className="btn-primary btn-sm"
                           >
                             {isJoining ? (

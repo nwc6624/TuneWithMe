@@ -423,9 +423,9 @@ export function RoomProvider({ children }: RoomProviderProps) {
     } catch (error) {
       console.error('RoomContext: Failed to join room:', error)
       console.error('RoomContext: Error details:', {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
       })
       console.log('=== ROOM CONTEXT DEBUG END ===')
       return false
