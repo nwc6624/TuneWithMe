@@ -575,14 +575,15 @@ export default function HostDashboard() {
                     <img 
                       src={currentPlayback.track.album_art_url} 
                       alt="Album Art"
-                      className="w-full h-full object-cover transition-opacity duration-200"
+                      className="w-full h-full object-cover transition-opacity duration-200 image-loading"
                       onLoad={(e) => {
-                        e.currentTarget.style.opacity = '1'
+                        e.currentTarget.classList.remove('image-loading')
+                        e.currentTarget.classList.add('image-loaded')
                       }}
                       onError={(e) => {
-                        e.currentTarget.style.opacity = '0'
+                        e.currentTarget.classList.remove('image-loaded')
+                        e.currentTarget.classList.add('image-loading')
                       }}
-                      style={{ opacity: 0 }}
                     />
                   </div>
                 )}
@@ -1269,14 +1270,15 @@ export default function HostDashboard() {
                         <img
                           src={currentPlayback.track.album_art_url}
                           alt="Album Art"
-                          className="w-full h-full object-cover transition-opacity duration-200"
+                          className="w-full h-full object-cover transition-opacity duration-200 image-loading"
                           onLoad={(e) => {
-                            e.currentTarget.style.opacity = '1'
+                            e.currentTarget.classList.remove('image-loading')
+                            e.currentTarget.classList.add('image-loaded')
                           }}
                           onError={(e) => {
-                            e.currentTarget.style.opacity = '0'
+                            e.currentTarget.classList.remove('image-loaded')
+                            e.currentTarget.classList.add('image-loading')
                           }}
-                          style={{ opacity: 0 }}
                         />
                       </div>
                     </div>

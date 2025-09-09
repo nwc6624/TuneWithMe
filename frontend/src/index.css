@@ -207,6 +207,17 @@ body {
     font-weight: 700;
   }
 
+
+  /* Image loading styles */
+  .image-loading {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .image-loaded {
+    opacity: 1;
+  }
+
   /* Enhanced surface contrast */
   .surface-high-contrast {
     background-color: var(--surface-primary);
