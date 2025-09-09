@@ -91,14 +91,14 @@ export default function LandingPage() {
       {/* How it works section */}
       <div className="py-20 bg-background-secondary" style={{ backgroundColor: '#f0f4f8' }}>
         <div className="container mx-auto px-4">
-          <h2 className="text-4xl font-bold text-center text-extra-high-contrast mb-16" style={{ color: '#000000', fontWeight: '900' }}>
+          <h2 className="text-4xl font-bold text-center text-extra-high-contrast mb-16" style={{ color: '#1e293b', fontWeight: '900' }}>
             How It Works
           </h2>
           
           <div className="grid md:grid-cols-2 gap-16 items-center">
             {/* Host side */}
             <div>
-              <h3 className="text-2xl font-semibold text-extra-high-contrast mb-6 flex items-center" style={{ color: '#000000', fontWeight: '800' }}>
+              <h3 className="text-2xl font-semibold text-extra-high-contrast mb-6 flex items-center" style={{ color: '#1e293b', fontWeight: '800' }}>
                 <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
                   1
                 </div>
@@ -108,25 +108,25 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Connect your Spotify Premium account
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Create a room and start sharing
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Listen normally - we'll sync everyone else
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Get OBS overlay URL for your stream
                   </p>
                 </div>
@@ -135,7 +135,7 @@ export default function LandingPage() {
 
             {/* Viewer side */}
             <div>
-              <h3 className="text-2xl font-semibold text-extra-high-contrast mb-6 flex items-center" style={{ color: '#000000', fontWeight: '800' }}>
+              <h3 className="text-2xl font-semibold text-extra-high-contrast mb-6 flex items-center" style={{ color: '#1e293b', fontWeight: '800' }}>
                 <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
                   2
                 </div>
@@ -145,25 +145,25 @@ export default function LandingPage() {
               <div className="space-y-4">
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Connect your Spotify Premium account
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Join a room with the room ID
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Choose your preferred device
                   </p>
                 </div>
                 <div className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-primary-400 rounded-full mt-2 flex-shrink-0" />
-                  <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+                  <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
                     Enjoy perfectly synced music
                   </p>
                 </div>
@@ -176,10 +176,10 @@ export default function LandingPage() {
       {/* Footer */}
       <div className="py-12 bg-background-primary border-t border-surface-tertiary/20" style={{ backgroundColor: '#f0f4f8' }}>
         <div className="container mx-auto px-4 text-center">
-          <p className="text-high-contrast" style={{ color: '#000000', fontWeight: '700' }}>
+          <p className="text-high-contrast" style={{ color: '#1e293b', fontWeight: '700' }}>
             © 2024 TuneWithMe. Built with ❤️ for music lovers and streamers.
           </p>
-          <p className="text-sm text-medium-contrast mt-2" style={{ color: '#000000', fontWeight: '600' }}>
+          <p className="text-sm text-medium-contrast mt-2" style={{ color: '#1e293b', fontWeight: '600' }}>
             Requires Spotify Premium accounts for all participants.
           </p>
         </div>
