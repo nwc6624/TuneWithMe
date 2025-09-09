@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRoom } from '../contexts/RoomContext'
-import { useAuth } from '../contexts/AuthContext'
 import { Users, Music, Clock, Globe } from 'lucide-react'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -16,7 +15,6 @@ interface PublicRoom {
 
 export default function PublicRooms() {
   const navigate = useNavigate()
-  const { user } = useAuth()
   const { joinRoom, getPublicRooms } = useRoom()
   
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([])
@@ -64,9 +62,9 @@ export default function PublicRooms() {
     } catch (error) {
       console.error('Failed to join room:', error)
       console.error('Error details:', {
-        name: error?.name,
-        message: error?.message,
-        stack: error?.stack
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
       })
       setError(`Failed to join room: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
