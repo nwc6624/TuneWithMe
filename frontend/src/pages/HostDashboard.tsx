@@ -625,7 +625,8 @@ export default function HostDashboard() {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-blue-500 h-2 rounded-full transition-all duration-100 ease-linear"
+                      className="host-progress-bar"
+                      // eslint-disable-next-line
                       style={{ width: `${smoothProgress}%` }}
                     />
                   </div>
@@ -1311,7 +1312,8 @@ export default function HostDashboard() {
                     <div className="space-y-2 mb-4">
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-blue-500 h-2 rounded-full transition-all duration-100 ease-linear"
+                          className="host-progress-bar"
+                          // eslint-disable-next-line
                           style={{ width: `${smoothProgress}%` }}
                         />
                       </div>

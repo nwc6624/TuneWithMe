@@ -740,7 +740,8 @@ export default function ViewerInterface() {
                   <div className="space-y-2">
                     <div className="w-full bg-surface-tertiary rounded-full h-2">
                       <div
-                        className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                        className="progress-bar"
+                        /* eslint-disable-next-line react/no-inline-styles */
                         style={{ width: `${getProgressPercent()}%` }}
                       />
                     </div>
