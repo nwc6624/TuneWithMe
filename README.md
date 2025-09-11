@@ -4,23 +4,53 @@ A real-time Spotify synchronization platform that lets streamers share their cur
 
 ## ✨ Features
 
+### Core Functionality
 - **Real-time Sync**: Sub-second accuracy synchronization between host and viewers
-- **Multi-platform**: Desktop web, iOS, and Android support
 - **Premium Quality**: Full Spotify Premium audio quality for all participants
-- **OBS Integration**: Beautiful "Now Playing" overlay for streamers
-- **Device Management**: Choose your preferred Spotify device
 - **No Audio Rebroadcasting**: Everyone listens through their own Spotify accounts
+- **Device Management**: Choose your preferred Spotify device for playback
+
+### User Experience
+- **Public Room Discovery**: Browse and join public listening sessions
+- **QR Code Sharing**: Easy room sharing with QR codes
+- **Responsive Design**: Modern, accessible UI with dark/light theme support
+- **Real-time Updates**: Live member count and room status updates
+
+### Streamer Tools
+- **OBS Integration**: Beautiful "Now Playing" overlay for streamers
+- **Host Dashboard**: Comprehensive control panel for room management
+- **Room Analytics**: Track member count and session duration
+- **Overlay Customization**: Styled overlay with current track information
+
+### Technical Features
+- **WebSocket Communication**: Real-time bidirectional communication
+- **Redis Pub/Sub**: Scalable real-time message distribution
+- **Spotify Web API**: Full integration with Spotify's playback controls
+- **Session Management**: Secure OAuth 2.0 authentication flow
 
 ## 🏗️ Architecture
 
-- **Backend**: Node.js + TypeScript + Fastify
-- 
-- 
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **Real-time**: WebSocket + Redis pub/sub
-- **Database**: Redis for ephemeral state, PostgreSQL optional for persistence
-- 
-- **Authentication**: Spotify OAuth 2.0 with PKCE
+### Backend Stack
+- **Runtime**: Node.js 18+ with TypeScript
+- **Framework**: Fastify (high-performance web framework)
+- **Real-time**: WebSocket + Redis pub/sub messaging
+- **Authentication**: Spotify OAuth 2.0 with session management
+- **Logging**: Pino (structured logging)
+- **Validation**: Zod (runtime type validation)
+- **Database**: Redis (ephemeral state management)
+
+### Frontend Stack
+- **Framework**: React 18 + TypeScript
+- **Build Tool**: Vite (fast development and building)
+- **Styling**: Tailwind CSS + custom CSS variables
+- **Routing**: React Router DOM
+- **Icons**: Lucide React
+- **QR Codes**: React QR Code + qrcode library
+- **State Management**: React Context API
+
+### Key Dependencies
+- **Backend**: `@fastify/websocket`, `@fastify/session`, `spotify-web-api-node`, `redis`
+- **Frontend**: `react-router-dom`, `lucide-react`, `tailwind-merge`, `clsx`
 
 ## 🚀 Quick Start
 
@@ -141,23 +171,47 @@ npm run dev:frontend # Frontend on port 3000
 TuneWithMe/
 ├── backend/                 # Node.js backend server
 │   ├── src/
-│   │   ├── routes/         # API routes
-│   │   ├── services/       # Business logic
+│   │   ├── routes/         # API routes (auth, rooms, overlay)
+│   │   ├── services/       # Business logic (spotify, redis, hostPoller)
 │   │   ├── websocket/      # WebSocket handling
-│   │   ├── types/          # TypeScript types
-│   │   └── utils/          # Utilities
+│   │   ├── types/          # TypeScript type definitions
+│   │   └── utils/          # Utilities (logger)
+│   ├── dist/               # Compiled JavaScript
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/                # React frontend
 │   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   ├── contexts/       # React contexts
-│   │   ├── pages/          # Page components
-│   │   └── types/          # TypeScript types
+│   │   ├── components/     # Reusable components (Layout, LoadingSpinner, QRCodeModal)
+│   │   ├── contexts/       # React contexts (Auth, Room, Theme)
+│   │   ├── pages/          # Page components (Landing, HostDashboard, ViewerInterface, etc.)
+│   │   ├── index.css       # Global styles with CSS variables
+│   │   └── main.tsx        # App entry point
+│   ├── dist/               # Built static files
 │   ├── package.json
 │   └── vite.config.ts
+├── docker-compose.yml       # Development environment
+├── docker-compose.prod.yml  # Production environment
 └── package.json             # Root workspace config
 ```
+
+### Current Pages & Components
+
+#### Pages
+- **LandingPage**: Welcome screen with feature overview and navigation
+- **HostDashboard**: Streamer control panel with room management
+- **ViewerInterface**: Listener interface with sync controls
+- **JoinRoom**: Room joining flow with device selection
+- **PublicRooms**: Browse and discover public listening sessions
+
+#### Components
+- **Layout**: Main app layout with navigation
+- **LoadingSpinner**: Reusable loading indicator
+- **QRCodeModal**: QR code generation for room sharing
+
+#### Contexts
+- **AuthContext**: Spotify authentication state management
+- **RoomContext**: Room state and WebSocket communication
+- **ThemeContext**: Dark/light theme switching
 
 ### Available Scripts
 
@@ -182,14 +236,14 @@ npm run test             # Run tests
 
 ### API Endpoints
 
-#### Authentication
+#### Authentication (`/auth`)
 - `GET /auth/spotify/start?role=host|viewer` - Start OAuth flow
 - `GET /auth/spotify/callback` - OAuth callback
 - `POST /auth/logout` - Logout
 - `GET /auth/me` - Get current user
 - `POST /auth/refresh` - Refresh tokens
 
-#### Rooms
+#### Rooms (`/rooms`)
 - `POST /rooms` - Create room
 - `POST /rooms/:id/join` - Join room
 - `POST /rooms/:id/leave` - Leave room
@@ -197,14 +251,18 @@ npm run test             # Run tests
 - `POST /rooms/:id/stop` - Stop sharing
 - `GET /rooms/:id/state` - Get room state
 - `GET /rooms/:id/members` - Get room members
+- `GET /rooms/public` - Get public rooms list
 
 #### WebSocket
 - `WS /ws/rooms/:id` - Join room WebSocket channel
 
-#### Overlay
+#### Overlay (`/overlay`)
 - `GET /overlay/:room_id` - OBS overlay HTML
 - `GET /overlay/:room_id/data` - Overlay data JSON
 - `GET /overlay/:room_id/style.css` - Overlay styles
+
+#### Health Check
+- `GET /health` - Server health status
 
 ### WebSocket Messages
 
@@ -281,6 +339,22 @@ Update your production environment with:
 - Input validation and sanitization
 - No sensitive data in logs
 
+## 🆕 Recent Updates
+
+### Latest Improvements
+- **CSS Architecture**: Moved inline styles to external CSS classes for better maintainability
+- **Theme System**: Enhanced dark/light theme support with CSS variables
+- **Public Rooms**: Added discovery feature for public listening sessions
+- **QR Code Sharing**: Implemented QR code generation for easy room sharing
+- **Responsive Design**: Improved mobile and desktop experience
+- **Code Quality**: Reduced linter warnings and improved code organization
+
+### Performance Optimizations
+- **WebSocket Efficiency**: Optimized real-time communication
+- **Redis Integration**: Enhanced pub/sub messaging for scalability
+- **Frontend Build**: Improved Vite configuration for faster builds
+- **Type Safety**: Enhanced TypeScript coverage across the codebase
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -288,6 +362,13 @@ Update your production environment with:
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
+
+### Development Guidelines
+- Follow TypeScript best practices
+- Use Tailwind CSS for styling
+- Maintain responsive design principles
+- Test WebSocket functionality thoroughly
+- Ensure Spotify API integration works correctly
 
 ## 📝 License
 
