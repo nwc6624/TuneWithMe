@@ -107,7 +107,6 @@ npm run dev
 npm run dev:backend  # Backend on port 3001
 npm run dev:frontend # Frontend on port 3000
 ```
-
 ### 6. Open Your Browser
 
 - Frontend: http://localhost:3000
