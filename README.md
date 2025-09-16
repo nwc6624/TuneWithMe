@@ -393,3 +393,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Note**: This project requires Spotify Premium accounts for all participants to enable playback control features.
+
+**Screenshots**
+
+--OBS plugin example 
+<img width="1152" height="781" alt="Screenshot 2025-09-02 at 10 57 35 PM" src="https://github.com/user-attachments/assets/8c17d89d-8075-4c41-8b60-020a7006a140" />
