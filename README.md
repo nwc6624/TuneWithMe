@@ -384,7 +384,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - All contributors and supporters
 
 ## 📞 Support
-<img width="1152" height="781" alt="Screenshot 2025-09-02 at 10 57 35 PM" src="https://github.com/user-attachments/assets/8c17d89d-8075-4c41-8b60-020a7006a140" />
 
 - Create an issue for bugs or feature requests
 - Check the documentation for common questions
