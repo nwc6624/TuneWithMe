@@ -5,6 +5,7 @@ A real-time Spotify synchronization platform that lets streamers share their cur
 ## ✨ Features
 
 
+
 ### Core Functionality
 - **Real-time Sync**: Sub-second accuracy synchronization between host and viewers
 - **Premium Quality**: Full Spotify Premium audio quality for all participants
