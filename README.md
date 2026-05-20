@@ -12,6 +12,9 @@ A real-time Spotify synchronization platform that lets streamers share their cur
 - **Device Management**: Choose your preferred Spotify device for playback
 
 
+
+
+
 ### User Experience
 - **Public Room Discovery**: Browse and join public listening sessions
 - **QR Code Sharing**: Easy room sharing with QR codes
